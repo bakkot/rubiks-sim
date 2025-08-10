@@ -111,60 +111,67 @@ class CubeRenderer {
                 const y = (row - 1) * (1 + gap);
                 
                 let points;
+                let index;
                 switch (face) {
-                    case 0: // Up
+                    case 0: // Up (White)
                         points = [
-                            { x: offset.x + x - 0.45, y: offset.y - 1.5, z: offset.z + y - 0.45 },
-                            { x: offset.x + x + 0.45, y: offset.y - 1.5, z: offset.z + y - 0.45 },
-                            { x: offset.x + x + 0.45, y: offset.y - 1.5, z: offset.z + y + 0.45 },
-                            { x: offset.x + x - 0.45, y: offset.y - 1.5, z: offset.z + y + 0.45 }
+                            { x: offset.x + x - 0.45, y: offset.y - 1.5, z: offset.z - y - 0.45 },
+                            { x: offset.x + x + 0.45, y: offset.y - 1.5, z: offset.z - y - 0.45 },
+                            { x: offset.x + x + 0.45, y: offset.y - 1.5, z: offset.z - y + 0.45 },
+                            { x: offset.x + x - 0.45, y: offset.y - 1.5, z: offset.z - y + 0.45 }
                         ];
+                        index = row * 3 + col;
                         break;
-                    case 1: // Right
+                    case 1: // Right (Red)
                         points = [
-                            { x: offset.x + 1.5, y: offset.y + x - 0.45, z: offset.z + y - 0.45 },
-                            { x: offset.x + 1.5, y: offset.y + x + 0.45, z: offset.z + y - 0.45 },
-                            { x: offset.x + 1.5, y: offset.y + x + 0.45, z: offset.z + y + 0.45 },
-                            { x: offset.x + 1.5, y: offset.y + x - 0.45, z: offset.z + y + 0.45 }
+                            { x: offset.x + 1.5, y: offset.y - y - 0.45, z: offset.z + x - 0.45 },
+                            { x: offset.x + 1.5, y: offset.y - y + 0.45, z: offset.z + x - 0.45 },
+                            { x: offset.x + 1.5, y: offset.y - y + 0.45, z: offset.z + x + 0.45 },
+                            { x: offset.x + 1.5, y: offset.y - y - 0.45, z: offset.z + x + 0.45 }
                         ];
+                        index = row * 3 + col;
                         break;
-                    case 2: // Front
+                    case 2: // Front (Blue)
                         points = [
-                            { x: offset.x + x - 0.45, y: offset.y + y - 0.45, z: offset.z + 1.5 },
-                            { x: offset.x + x + 0.45, y: offset.y + y - 0.45, z: offset.z + 1.5 },
-                            { x: offset.x + x + 0.45, y: offset.y + y + 0.45, z: offset.z + 1.5 },
-                            { x: offset.x + x - 0.45, y: offset.y + y + 0.45, z: offset.z + 1.5 }
+                            { x: offset.x + x - 0.45, y: offset.y - y - 0.45, z: offset.z + 1.5 },
+                            { x: offset.x + x + 0.45, y: offset.y - y - 0.45, z: offset.z + 1.5 },
+                            { x: offset.x + x + 0.45, y: offset.y - y + 0.45, z: offset.z + 1.5 },
+                            { x: offset.x + x - 0.45, y: offset.y - y + 0.45, z: offset.z + 1.5 }
                         ];
+                        index = row * 3 + col;
                         break;
-                    case 3: // Down
+                    case 3: // Down (Yellow)
                         points = [
-                            { x: offset.x + x - 0.45, y: offset.y + 1.5, z: offset.z - y - 0.45 },
-                            { x: offset.x + x + 0.45, y: offset.y + 1.5, z: offset.z - y - 0.45 },
-                            { x: offset.x + x + 0.45, y: offset.y + 1.5, z: offset.z - y + 0.45 },
-                            { x: offset.x + x - 0.45, y: offset.y + 1.5, z: offset.z - y + 0.45 }
+                            { x: offset.x + x - 0.45, y: offset.y + 1.5, z: offset.z + y - 0.45 },
+                            { x: offset.x + x + 0.45, y: offset.y + 1.5, z: offset.z + y - 0.45 },
+                            { x: offset.x + x + 0.45, y: offset.y + 1.5, z: offset.z + y + 0.45 },
+                            { x: offset.x + x - 0.45, y: offset.y + 1.5, z: offset.z + y + 0.45 }
                         ];
+                        index = row * 3 + col;
                         break;
-                    case 4: // Left
+                    case 4: // Left (Orange)
                         points = [
-                            { x: offset.x - 1.5, y: offset.y - x - 0.45, z: offset.z + y - 0.45 },
-                            { x: offset.x - 1.5, y: offset.y - x + 0.45, z: offset.z + y - 0.45 },
-                            { x: offset.x - 1.5, y: offset.y - x + 0.45, z: offset.z + y + 0.45 },
-                            { x: offset.x - 1.5, y: offset.y - x - 0.45, z: offset.z + y + 0.45 }
+                            { x: offset.x - 1.5, y: offset.y - y - 0.45, z: offset.z - x - 0.45 },
+                            { x: offset.x - 1.5, y: offset.y - y + 0.45, z: offset.z - x - 0.45 },
+                            { x: offset.x - 1.5, y: offset.y - y + 0.45, z: offset.z - x + 0.45 },
+                            { x: offset.x - 1.5, y: offset.y - y - 0.45, z: offset.z - x + 0.45 }
                         ];
+                        index = row * 3 + col;
                         break;
-                    case 5: // Back
+                    case 5: // Back (Green)
                         points = [
-                            { x: offset.x - x - 0.45, y: offset.y + y - 0.45, z: offset.z - 1.5 },
-                            { x: offset.x - x + 0.45, y: offset.y + y - 0.45, z: offset.z - 1.5 },
-                            { x: offset.x - x + 0.45, y: offset.y + y + 0.45, z: offset.z - 1.5 },
-                            { x: offset.x - x - 0.45, y: offset.y + y + 0.45, z: offset.z - 1.5 }
+                            { x: offset.x - x - 0.45, y: offset.y - y - 0.45, z: offset.z - 1.5 },
+                            { x: offset.x - x + 0.45, y: offset.y - y - 0.45, z: offset.z - 1.5 },
+                            { x: offset.x - x + 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 },
+                            { x: offset.x - x - 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 }
                         ];
+                        index = row * 3 + col;
                         break;
                 }
-                
+
                 stickers.push({
                     points: points,
-                    index: row * 3 + col
+                    index: index
                 });
             }
         }
