@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        #canvas {
+            border: 1px solid #ccc;
+            background-color: #000;
+            cursor: grab;
+        }
+        
+        #canvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .move-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .move-button {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #2196F3;
+        }
+        
+        .move-button:hover {
+            background-color: #0b7dda;
+        }
+        
+        #info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rubik's Cube Simulator</h1>
+    
+    <canvas id="canvas" width="600" height="600"></canvas>
+    
+    <div class="controls">
+        <button id="scrambleBtn">Scramble</button>
+        <button id="resetBtn">Reset</button>
+    </div>
+    
+    <div class="move-buttons">
+        <button class="move-button" data-move="U">U</button>
+        <button class="move-button" data-move="U'">U'</button>
+        <button class="move-button" data-move="R">R</button>
+        <button class="move-button" data-move="R'">R'</button>
+        <button class="move-button" data-move="F">F</button>
+        <button class="move-button" data-move="F'">F'</button>
+        <button class="move-button" data-move="D">D</button>
+        <button class="move-button" data-move="D'">D'</button>
+        <button class="move-button" data-move="L">L</button>
+        <button class="move-button" data-move="L'">L'</button>
+        <button class="move-button" data-move="B">B</button>
+        <button class="move-button" data-move="B'">B'</button>
+    </div>
+    
+    <div id="info">Click and drag to rotate the cube view</div>
+    
+    <script src="cube.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>
