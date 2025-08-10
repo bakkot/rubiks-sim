@@ -7,16 +7,19 @@ class RubiksCube {
     reset() {
         // Initialize cube state - each face has 9 stickers
         // Using Uint8Array for better performance
-        // Colors: 0=White, 1=Red, 2=Blue, 3=Orange, 4=Green, 5=Yellow
+        // Standard color scheme:
+        // 0=White (U), 1=Red (R), 2=Blue (F), 3=Yellow (D), 4=Orange (L), 5=Green (B)
         this.state = new Uint8Array(54);
-        
+
         // Initialize faces in order: U, R, F, D, L, B
+        const faceColors = [0, 1, 2, 3, 4, 5];
         for (let i = 0; i < 6; i++) {
             for (let j = 0; j < 9; j++) {
-                this.state[i * 9 + j] = i;
+                this.state[i * 9 + j] = faceColors[i];
             }
         }
     }
+
 
     // Get face as array
     getFace(face) {

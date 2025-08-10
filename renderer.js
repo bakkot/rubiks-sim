@@ -12,12 +12,12 @@ class CubeRenderer {
         
         // Colors
         this.colors = [
-            '#FFFFFF', // White
-            '#FF0000', // Red
-            '#0000FF', // Blue
-            '#FFA500', // Orange
-            '#00FF00', // Green
-            '#FFFF00'  // Yellow
+            '#FFFFFF', // White (U)
+            '#FF0000', // Red (R)
+            '#0000FF', // Blue (F)
+            '#FFFF00', // Yellow (D)
+            '#FFA500', // Orange (L)
+            '#00FF00'  // Green (B)
         ];
         
         // Mouse interaction
@@ -165,7 +165,8 @@ class CubeRenderer {
                             { x: offset.x - x + 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 },
                             { x: offset.x - x - 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 }
                         ];
-                        index = row * 3 + col;
+                        // Flip the index mapping for back face
+                        index = (2 - row) * 3 + (2 - col);
                         break;
                 }
 
