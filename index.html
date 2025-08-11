@@ -526,64 +526,108 @@
                     const colors = corner.colors;
                     const ori = corner.orientation;
 
-                    // Determine which faces this corner touches
-                    const facesTouchingCorner = [];
-                    if (pos.y < 0) facesTouchingCorner.push('U'); else facesTouchingCorner.push('D');
-                    if (pos.z < 0) facesTouchingCorner.push('F'); else facesTouchingCorner.push('B');
-                    if (pos.x > 0) facesTouchingCorner.push('R'); else facesTouchingCorner.push('L');
+                    // Map each face to its color based on position
+                    const faceColorMap = {};
 
-                    // Draw stickers
-                    facesTouchingCorner.forEach((face, i) => {
-                        const colorIndex = (i + ori) % 3;
-                        const color = colors[colorIndex];
-
-                    let stickerCorners;
-                    const size = 0.333; // 1/3 of cube edge
-                    const faceDistance = 1.01; // Slightly outside the cube center
-
-                    if (face === 'U' || face === 'D') {
-                        const y = (face === 'U' ? -1 : 1) * faceDistance;
-                        const xSign = pos.x > 0 ? 1 : -1;
-                        const zSign = pos.z > 0 ? 1 : -1;
-                        const xCenter = xSign * 0.667;
-                        const zCenter = zSign * 0.667;
-                        stickerCorners = [
-                            this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
-                            this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
-                            this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
-                            this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
-                        ];
-                    } else if (face === 'R' || face === 'L') {
-                        const x = (face === 'R' ? 1 : -1) * faceDistance;
-                        const ySign = pos.y > 0 ? 1 : -1;
-                        const zSign = pos.z > 0 ? 1 : -1;
-                        const yCenter = ySign * 0.667;
-                        const zCenter = zSign * 0.667;
-                        stickerCorners = [
-                            this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
-                            this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
-                            this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
-                            this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
-                        ];
-                    } else {
-                        const z = (face === 'F' ? -1 : 1) * faceDistance;
-                        const xSign = pos.x > 0 ? 1 : -1;
-                        const ySign = pos.y > 0 ? 1 : -1;
-                        const xCenter = xSign * 0.667;
-                        const yCenter = ySign * 0.667;
-                        stickerCorners = [
-                            this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
-                            this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
-                            this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
-                            this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
-                        ];
+                    // Determine color mapping based on the specific corner position
+                    if (corner.position === 0) { // URF
+                        faceColorMap['U'] = colors[0];
+                        faceColorMap['R'] = colors[1];
+                        faceColorMap['F'] = colors[2];
+                    } else if (corner.position === 1) { // UFL
+                        faceColorMap['U'] = colors[0];
+                        faceColorMap['F'] = colors[1];
+                        faceColorMap['L'] = colors[2];
+                    } else if (corner.position === 2) { // ULB
+                        faceColorMap['U'] = colors[0];
+                        faceColorMap['L'] = colors[1];
+                        faceColorMap['B'] = colors[2];
+                    } else if (corner.position === 3) { // UBR
+                        faceColorMap['U'] = colors[0];
+                        faceColorMap['B'] = colors[1];
+                        faceColorMap['R'] = colors[2];
+                    } else if (corner.position === 4) { // DFR
+                        faceColorMap['D'] = colors[0];
+                        faceColorMap['F'] = colors[1];
+                        faceColorMap['R'] = colors[2];
+                    } else if (corner.position === 5) { // DLF
+                        faceColorMap['D'] = colors[0];
+                        faceColorMap['L'] = colors[1];
+                        faceColorMap['F'] = colors[2];
+                    } else if (corner.position === 6) { // DBL
+                        faceColorMap['D'] = colors[0];
+                        faceColorMap['B'] = colors[1];
+                        faceColorMap['L'] = colors[2];
+                    } else if (corner.position === 7) { // DRB
+                        faceColorMap['D'] = colors[0];
+                        faceColorMap['R'] = colors[1];
+                        faceColorMap['B'] = colors[2];
                     }
 
+                    // Apply orientation
+                    const rotatedMap = {};
+                    const faces = Object.keys(faceColorMap);
+                    faces.forEach((face, i) => {
+                        rotatedMap[face] = faceColorMap[faces[(i + ori) % 3]];
+                    });
+
+                    // Draw stickers for each face this corner touches
+                    const facesToDraw = [];
+                    if (pos.y < 0) facesToDraw.push('U');
+                    else facesToDraw.push('D');
+                    if (pos.x > 0) facesToDraw.push('R');
+                    else facesToDraw.push('L');
+                    if (pos.z < 0) facesToDraw.push('F');
+                    else facesToDraw.push('B');
+
+                    facesToDraw.forEach(face => {
+                        const color = rotatedMap[face];
+
+                        let stickerCorners;
+                        const size = 0.333;
+                        const faceDistance = 1.01;
+
+                        if (face === 'U' || face === 'D') {
+                            const y = (face === 'U' ? -1 : 1) * faceDistance;
+                            const xSign = pos.x > 0 ? 1 : -1;
+                            const zSign = pos.z > 0 ? 1 : -1;
+                            const xCenter = xSign * 0.667;
+                            const zCenter = zSign * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
+                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
+                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
+                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
+                            ];
+                        } else if (face === 'R' || face === 'L') {
+                            const x = (face === 'R' ? 1 : -1) * faceDistance;
+                            const ySign = pos.y > 0 ? 1 : -1;
+                            const zSign = pos.z > 0 ? 1 : -1;
+                            const yCenter = ySign * 0.667;
+                            const zCenter = zSign * 0.667;
+                            stickerCorners = [
+                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
+                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
+                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
+                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
+                            ];
+                        } else {
+                            const z = (face === 'F' ? -1 : 1) * faceDistance;
+                            const xSign = pos.x > 0 ? 1 : -1;
+                            const ySign = pos.y > 0 ? 1 : -1;
+                            const xCenter = xSign * 0.667;
+                            const yCenter = ySign * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
+                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
+                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
+                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
+                            ];
+                        }
 
                         const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
                         stickers.push({ corners: stickerCorners, color, z: avgZ });
                     });
-
                 });
 
                 // Sort stickers by z-depth (back to front)
