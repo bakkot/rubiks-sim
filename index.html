@@ -96,29 +96,29 @@
 
             reset() {
                 this.corners = [
-                    { id: 0, ori: 0 }, // URF
-                    { id: 1, ori: 0 }, // UFL
-                    { id: 2, ori: 0 }, // ULB
-                    { id: 3, ori: 0 }, // UBR
-                    { id: 4, ori: 0 }, // DFR
-                    { id: 5, ori: 0 }, // DLF
-                    { id: 6, ori: 0 }, // DBL
-                    { id: 7, ori: 0 }  // DRB
+                    { id: 0, ori: 0, colors: ['white', 'red', 'green'] }, // URF
+                    { id: 1, ori: 0, colors: ['white', 'green', 'orange'] }, // UFL
+                    { id: 2, ori: 0, colors: ['white', 'orange', 'blue'] }, // ULB
+                    { id: 3, ori: 0, colors: ['white', 'blue', 'red'] }, // UBR
+                    { id: 4, ori: 0, colors: ['yellow', 'green', 'red'] }, // DFR
+                    { id: 5, ori: 0, colors: ['yellow', 'orange', 'green'] }, // DLF
+                    { id: 6, ori: 0, colors: ['yellow', 'blue', 'orange'] }, // DBL
+                    { id: 7, ori: 0, colors: ['yellow', 'red', 'blue'] }  // DRB
                 ];
 
                 this.edges = [
-                    { id: 0, ori: 0 },  // UR
-                    { id: 1, ori: 0 },  // UF
-                    { id: 2, ori: 0 },  // UL
-                    { id: 3, ori: 0 },  // UB
-                    { id: 4, ori: 0 },  // DR
-                    { id: 5, ori: 0 },  // DF
-                    { id: 6, ori: 0 },  // DL
-                    { id: 7, ori: 0 },  // DB
-                    { id: 8, ori: 0 },  // FR
-                    { id: 9, ori: 0 },  // FL
-                    { id: 10, ori: 0 }, // BL
-                    { id: 11, ori: 0 }  // BR
+                      { id: 0, ori: 0, colors: ['white', 'red'] },     // UR
+                      { id: 1, ori: 0, colors: ['white', 'green'] },   // UF
+                      { id: 2, ori: 0, colors: ['white', 'orange'] },  // UL
+                      { id: 3, ori: 0, colors: ['white', 'blue'] },    // UB
+                      { id: 4, ori: 0, colors: ['yellow', 'red'] },    // DR
+                      { id: 5, ori: 0, colors: ['yellow', 'green'] },  // DF
+                      { id: 6, ori: 0, colors: ['yellow', 'orange'] }, // DL
+                      { id: 7, ori: 0, colors: ['yellow', 'blue'] },   // DB
+                      { id: 8, ori: 0, colors: ['green', 'red'] },     // FR
+                      { id: 9, ori: 0, colors: ['green', 'orange'] },  // FL
+                      { id: 10, ori: 0, colors: ['blue', 'orange'] },  // BL
+                      { id: 11, ori: 0, colors: ['blue', 'red'] },     // BR
                 ];
             }
 
@@ -226,44 +226,16 @@
 
             // Get visual representation
             // TODO refactor
-            getVisualState() {
-                // Define color schemes for each piece
-                const cornerColors = [
-                    ['white', 'red', 'green'],     // URF
-                    ['white', 'green', 'orange'],   // UFL
-                    ['white', 'orange', 'blue'],    // ULB
-                    ['white', 'blue', 'red'],       // UBR
-                    ['yellow', 'green', 'red'],     // DFR
-                    ['yellow', 'orange', 'green'],  // DLF
-                    ['yellow', 'blue', 'orange'],   // DBL
-                    ['yellow', 'red', 'blue']       // DRB
-                ];
-
-                const edgeColors = [
-                    ['white', 'red'],     // UR
-                    ['white', 'green'],   // UF
-                    ['white', 'orange'],  // UL
-                    ['white', 'blue'],    // UB
-                    ['yellow', 'red'],    // DR
-                    ['yellow', 'green'],  // DF
-                    ['yellow', 'orange'], // DL
-                    ['yellow', 'blue'],   // DB
-                    ['green', 'red'],     // FR
-                    ['green', 'orange'],  // FL
-                    ['blue', 'orange'],   // BL
-                    ['blue', 'red']       // BR
-                ];
-
-                return {
+            getVisualState() {                return {
                     corners: this.corners.map((corner, i) => ({
                         position: i,
                         orientation: corner.ori,
-                        colors: cornerColors[corner.id]
+                        colors: corner.colors
                     })),
                     edges: this.edges.map((edge, i) => ({
                         position: i,
                         orientation: edge.ori,
-                        colors: edgeColors[edge.id]
+                        colors: edge.colors,
                     }))
                 };
             }
@@ -275,8 +247,8 @@
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
                 this.cube = cube;
-                this.rotationX = -25;
-                this.rotationY = -35;
+                this.rotationX = 25;
+                this.rotationY = -20;
                 this.scale = 100;
 
                 this.setupInteraction();
