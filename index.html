@@ -96,29 +96,29 @@
 
             reset() {
                 this.corners = [
-                    { id: 0, ori: 0, colors: ['white', 'red', 'green'] }, // URF
-                    { id: 1, ori: 0, colors: ['white', 'green', 'orange'] }, // UFL
-                    { id: 2, ori: 0, colors: ['white', 'orange', 'blue'] }, // ULB
-                    { id: 3, ori: 0, colors: ['white', 'blue', 'red'] }, // UBR
-                    { id: 4, ori: 0, colors: ['yellow', 'green', 'red'] }, // DFR
-                    { id: 5, ori: 0, colors: ['yellow', 'orange', 'green'] }, // DLF
-                    { id: 6, ori: 0, colors: ['yellow', 'blue', 'orange'] }, // DBL
-                    { id: 7, ori: 0, colors: ['yellow', 'red', 'blue'] }  // DRB
+                    { id: 0, orientation: 0, colors: ['white', 'red', 'green'] },     // URF
+                    { id: 1, orientation: 0, colors: ['white', 'green', 'orange'] },  // UFL
+                    { id: 2, orientation: 0, colors: ['white', 'orange', 'blue'] },   // ULB
+                    { id: 3, orientation: 0, colors: ['white', 'blue', 'red'] },      // UBR
+                    { id: 4, orientation: 0, colors: ['yellow', 'green', 'red'] },    // DFR
+                    { id: 5, orientation: 0, colors: ['yellow', 'orange', 'green'] }, // DLF
+                    { id: 6, orientation: 0, colors: ['yellow', 'blue', 'orange'] },  // DBL
+                    { id: 7, orientation: 0, colors: ['yellow', 'red', 'blue'] }      // DRB
                 ];
 
                 this.edges = [
-                      { id: 0, ori: 0, colors: ['white', 'red'] },     // UR
-                      { id: 1, ori: 0, colors: ['white', 'green'] },   // UF
-                      { id: 2, ori: 0, colors: ['white', 'orange'] },  // UL
-                      { id: 3, ori: 0, colors: ['white', 'blue'] },    // UB
-                      { id: 4, ori: 0, colors: ['yellow', 'red'] },    // DR
-                      { id: 5, ori: 0, colors: ['yellow', 'green'] },  // DF
-                      { id: 6, ori: 0, colors: ['yellow', 'orange'] }, // DL
-                      { id: 7, ori: 0, colors: ['yellow', 'blue'] },   // DB
-                      { id: 8, ori: 0, colors: ['green', 'red'] },     // FR
-                      { id: 9, ori: 0, colors: ['green', 'orange'] },  // FL
-                      { id: 10, ori: 0, colors: ['blue', 'orange'] },  // BL
-                      { id: 11, ori: 0, colors: ['blue', 'red'] },     // BR
+                      { id: 0, orientation: 0, colors: ['white', 'red'] },     // UR
+                      { id: 1, orientation: 0, colors: ['white', 'green'] },   // UF
+                      { id: 2, orientation: 0, colors: ['white', 'orange'] },  // UL
+                      { id: 3, orientation: 0, colors: ['white', 'blue'] },    // UB
+                      { id: 4, orientation: 0, colors: ['yellow', 'red'] },    // DR
+                      { id: 5, orientation: 0, colors: ['yellow', 'green'] },  // DF
+                      { id: 6, orientation: 0, colors: ['yellow', 'orange'] }, // DL
+                      { id: 7, orientation: 0, colors: ['yellow', 'blue'] },   // DB
+                      { id: 8, orientation: 0, colors: ['green', 'red'] },     // FR
+                      { id: 9, orientation: 0, colors: ['green', 'orange'] },  // FL
+                      { id: 10, orientation: 0, colors: ['blue', 'orange'] },  // BL
+                      { id: 11, orientation: 0, colors: ['blue', 'red'] },     // BR
                 ];
             }
 
@@ -158,7 +158,7 @@
                     const newPos = cycle[(cycle.length + i - 1) % cycle.length];
                     const dist = newPos - cycle[i];
                     const sign = dist % 2 === 0 ? -1 : 1;
-                    piece.ori = ((isCorner ? 3 : 2) + piece.ori + sign * oriChange) % (isCorner ? 3 : 2);
+                    piece.orientation = ((isCorner ? 3 : 2) + piece.orientation + sign * oriChange) % (isCorner ? 3 : 2);
                     pieces[newPos] = piece;
                 }
             }
@@ -222,22 +222,6 @@
             Bprime() {
                 this.cyclePieces(this.corners, [7, 6, 2, 3], 2);
                 this.cyclePieces(this.edges, [11, 7, 10, 3], 1);
-            }
-
-            // Get visual representation
-            // TODO refactor
-            getVisualState() {                return {
-                    corners: this.corners.map((corner, i) => ({
-                        position: i,
-                        orientation: corner.ori,
-                        colors: corner.colors
-                    })),
-                    edges: this.edges.map((edge, i) => ({
-                        position: i,
-                        orientation: edge.ori,
-                        colors: edge.colors,
-                    }))
-                };
             }
         }
 
@@ -331,6 +315,7 @@
 
                 animate();
             }
+
             getRotationMatrix(axis, angle) {
                 const c = Math.cos(angle);
                 const s = Math.sin(angle);
@@ -356,13 +341,8 @@
                 }
             }
 
-            // Add this method to determine which pieces are affected by a move:
             isPieceAffectedByMove(pieceType, piecePos, move) {
                 const face = move.charAt(0);
-
-                if (pieceType === 'center') {
-                    return false; // Centers don't move
-                }
 
                 if (face === 'U') return piecePos.y < -0.5;
                 if (face === 'D') return piecePos.y > 0.5;
@@ -375,7 +355,7 @@
             }
 
 
-            project3D(x, y, z, applyAnimation = true) {
+            project3D(x, y, z, applyAnimation) {
                 // Apply animation rotation if active
                 if (applyAnimation && this.currentAnimation) {
                     const move = this.currentAnimation.move;
@@ -453,7 +433,6 @@
             render() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-                const state = this.cube.getVisualState();
                 const faces = [];
 
                 // Define piece positions and orientations
@@ -543,8 +522,8 @@
 
 
                 // Add edge stickers
-                state.edges.forEach(edge => {
-                    const pos = edgePositions[edge.position];
+                this.cube.edges.forEach((edge, index) => {
+                    const pos = edgePositions[index];
                     const colors = edge.colors;
                     const ori = edge.orientation;
 
@@ -558,7 +537,7 @@
                     facesTouchingEdge.forEach((face, i) => {
                         // For edges on the middle layer (FR, FL, BL, BR), we need to adjust the color mapping
                         let colorIndex;
-                        if (edge.position >= 8 && edge.position <= 11) {
+                        if (index >= 8 && index <= 11) {
                             // Middle layer edges - first color goes to F/B face, second to R/L face
                             if (face === 'F' || face === 'B') {
                                 colorIndex = ori;
@@ -615,8 +594,8 @@
                 });
 
                 // Add corner stickers
-                state.corners.forEach(corner => {
-                    const pos = cornerPositions[corner.position];
+                this.cube.corners.forEach((corner, index) => {
+                    const pos = cornerPositions[index];
                     const colors = corner.colors;
                     const ori = corner.orientation;
 
@@ -624,35 +603,35 @@
                     const faceColorMap = {};
 
                     // Determine color mapping based on the specific corner position
-                    if (corner.position === 0) { // URF
+                    if (index === 0) { // URF
                         faceColorMap['U'] = colors[0];
                         faceColorMap['R'] = colors[1];
                         faceColorMap['F'] = colors[2];
-                    } else if (corner.position === 1) { // UFL
+                    } else if (index === 1) { // UFL
                         faceColorMap['U'] = colors[0];
                         faceColorMap['F'] = colors[1];
                         faceColorMap['L'] = colors[2];
-                    } else if (corner.position === 2) { // ULB
+                    } else if (index === 2) { // ULB
                         faceColorMap['U'] = colors[0];
                         faceColorMap['L'] = colors[1];
                         faceColorMap['B'] = colors[2];
-                    } else if (corner.position === 3) { // UBR
+                    } else if (index === 3) { // UBR
                         faceColorMap['U'] = colors[0];
                         faceColorMap['B'] = colors[1];
                         faceColorMap['R'] = colors[2];
-                    } else if (corner.position === 4) { // DFR
+                    } else if (index === 4) { // DFR
                         faceColorMap['D'] = colors[0];
                         faceColorMap['F'] = colors[1];
                         faceColorMap['R'] = colors[2];
-                    } else if (corner.position === 5) { // DLF
+                    } else if (index === 5) { // DLF
                         faceColorMap['D'] = colors[0];
                         faceColorMap['L'] = colors[1];
                         faceColorMap['F'] = colors[2];
-                    } else if (corner.position === 6) { // DBL
+                    } else if (index === 6) { // DBL
                         faceColorMap['D'] = colors[0];
                         faceColorMap['B'] = colors[1];
                         faceColorMap['L'] = colors[2];
-                    } else if (corner.position === 7) { // DRB
+                    } else if (index === 7) { // DRB
                         faceColorMap['D'] = colors[0];
                         faceColorMap['R'] = colors[1];
                         faceColorMap['B'] = colors[2];
@@ -672,7 +651,7 @@
                     };
 
                     const rotatedMap = {};
-                    const rotationOrder = cornerRotationOrders[corner.position];
+                    const rotationOrder = cornerRotationOrders[index];
                     rotationOrder.forEach((face, i) => {
                         rotatedMap[face] = faceColorMap[rotationOrder[(i + ori) % 3]];
                     });
