@@ -137,6 +137,38 @@
         padding: 8px 16px;
         font-size: 14px;
       }
+
+      .error-dialog {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        max-width: 400px;
+        text-align: center;
+      }
+
+      .error-dialog::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .error-dialog h3 {
+        color: #e53e3e;
+        margin-top: 0;
+      }
+
+      .error-dialog button {
+        background-color: #e53e3e;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .error-dialog button:hover {
+        background-color: #c53030;
+      }
     </style>
   </head>
   <body>
@@ -190,6 +222,12 @@
         </button>
       </div>
     </div>
+
+    <dialog id="error-dialog" class="error-dialog">
+      <h3>Invalid Move Sequence</h3>
+      <p id="error-message"></p>
+      <button onclick="hideErrorModal()">OK</button>
+    </dialog>
 
     <script>
       class RubiksCube {
@@ -1161,11 +1199,14 @@
         // Remove all whitespace
         const cleanSequence = sequence.replace(/\s/g, '');
         const moves = [];
+        const invalidChars = [];
 
         let i = 0;
         while (i < cleanSequence.length) {
-          if (/[UDRLF B]/.test(cleanSequence[i])) {
-            let move = cleanSequence[i];
+          const char = cleanSequence[i];
+          
+          if (/[UDRLF B]/.test(char)) {
+            let move = char;
             
             // Check for prime or 2
             if (i + 1 < cleanSequence.length) {
@@ -1174,18 +1215,33 @@
                 i++;
               } else if (cleanSequence[i + 1] === "2") {
                 moves.push(move, move); // Add twice for double move
-                i++;
-                i++;
+                i += 2;
                 continue;
               }
             }
             
             moves.push(move);
+          } else if (!invalidChars.includes(char)) {
+            invalidChars.push(char);
           }
           i++;
         }
 
-        return moves;
+        return { moves, invalidChars };
+      }
+
+      // Show error modal
+      function showErrorModal(message) {
+        const dialog = document.getElementById('error-dialog');
+        const messageElement = document.getElementById('error-message');
+        messageElement.innerHTML = message;
+        dialog.showModal();
+      }
+
+      // Hide error modal
+      function hideErrorModal() {
+        const dialog = document.getElementById('error-dialog');
+        dialog.close();
       }
 
       // Execute a sequence of moves
@@ -1195,10 +1251,17 @@
         
         if (!sequence) return;
 
-        const moves = parseMoveSequence(sequence);
+        const result = parseMoveSequence(sequence);
         
+        // Check for invalid characters
+        if (result.invalidChars.length > 0) {
+          const invalidStr = result.invalidChars.map(c => `'${c}'`).join(', ');
+          showErrorModal(`Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, ', 2`);
+          return;
+        }
+
         // Execute each move in sequence using visual moves
-        for (const move of moves) {
+        for (const move of result.moves) {
           if (['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"].includes(move)) {
             await renderer.animateVisualMove(move);
           }
