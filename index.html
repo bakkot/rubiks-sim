@@ -243,130 +243,149 @@
         }
       }
 
+      /**
+       * A collection of self-contained math utilities for 3D rotation.
+       * Quaternions are represented as [x, y, z, w].
+       * 4x4 Matrices are represented as a 16-element Float32Array in column-major order.
+       */
+      const Math3D = {
+        // --- Quaternion Functions ---
 
-/**
- * A collection of self-contained math utilities for 3D rotation.
- * Quaternions are represented as [x, y, z, w].
- * 4x4 Matrices are represented as a 16-element Float32Array in column-major order.
- */
-const Math3D = {
-  // --- Quaternion Functions ---
+        /** Creates an identity quaternion [0, 0, 0, 1] */
+        quat_create: function () {
+          return [0, 0, 0, 1];
+        },
 
-  /** Creates an identity quaternion [0, 0, 0, 1] */
-  quat_create: function() {
-    return [0, 0, 0, 1];
-  },
+        /**
+         * Creates a quaternion from a rotation around an axis.
+         * @param {Float32Array} out The receiving quaternion.
+         * @param {Array<number>} axis The axis of rotation.
+         * @param {number} rad The angle of rotation in radians.
+         */
+        quat_fromAxisAngle: function (out, axis, rad) {
+          const halfAngle = rad / 2;
+          const s = Math.sin(halfAngle);
+          out[0] = axis[0] * s;
+          out[1] = axis[1] * s;
+          out[2] = axis[2] * s;
+          out[3] = Math.cos(halfAngle);
+          return out;
+        },
 
-  /**
-   * Creates a quaternion from a rotation around an axis.
-   * @param {Float32Array} out The receiving quaternion.
-   * @param {Array<number>} axis The axis of rotation.
-   * @param {number} rad The angle of rotation in radians.
-   */
-  quat_fromAxisAngle: function(out, axis, rad) {
-    const halfAngle = rad / 2;
-    const s = Math.sin(halfAngle);
-    out[0] = axis[0] * s;
-    out[1] = axis[1] * s;
-    out[2] = axis[2] * s;
-    out[3] = Math.cos(halfAngle);
-    return out;
-  },
+        /**
+         * Multiplies two quaternions. Order matters: a * b applies rotation b then a.
+         * @param {Float32Array} out The receiving quaternion.
+         * @param {Float32Array} a The first operand.
+         * @param {Float32Array} b The second operand.
+         */
+        quat_multiply: function (out, a, b) {
+          const ax = a[0],
+            ay = a[1],
+            az = a[2],
+            aw = a[3];
+          const bx = b[0],
+            by = b[1],
+            bz = b[2],
+            bw = b[3];
+          out[0] = ax * bw + aw * bx + ay * bz - az * by;
+          out[1] = ay * bw + aw * by + az * bx - ax * bz;
+          out[2] = az * bw + aw * bz + ax * by - ay * bx;
+          out[3] = aw * bw - ax * bx - ay * by - az * bz;
+          return out;
+        },
 
-  /**
-   * Multiplies two quaternions. Order matters: a * b applies rotation b then a.
-   * @param {Float32Array} out The receiving quaternion.
-   * @param {Float32Array} a The first operand.
-   * @param {Float32Array} b The second operand.
-   */
-  quat_multiply: function(out, a, b) {
-    const ax = a[0], ay = a[1], az = a[2], aw = a[3];
-    const bx = b[0], by = b[1], bz = b[2], bw = b[3];
-    out[0] = ax * bw + aw * bx + ay * bz - az * by;
-    out[1] = ay * bw + aw * by + az * bx - ax * bz;
-    out[2] = az * bw + aw * bz + ax * by - ay * bx;
-    out[3] = aw * bw - ax * bx - ay * by - az * bz;
-    return out;
-  },
+        /**
+         * Normalizes a quaternion.
+         * @param {Float32Array} out The receiving quaternion.
+         * @param {Float32Array} q The quaternion to normalize.
+         */
+        quat_normalize: function (out, q) {
+          let len = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
+          if (len > 0) {
+            len = 1 / Math.sqrt(len);
+          }
+          out[0] = q[0] * len;
+          out[1] = q[1] * len;
+          out[2] = q[2] * len;
+          out[3] = q[3] * len;
+          return out;
+        },
 
-  /**
-   * Normalizes a quaternion.
-   * @param {Float32Array} out The receiving quaternion.
-   * @param {Float32Array} q The quaternion to normalize.
-   */
-  quat_normalize: function(out, q) {
-    let len = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
-    if (len > 0) {
-      len = 1 / Math.sqrt(len);
-    }
-    out[0] = q[0] * len;
-    out[1] = q[1] * len;
-    out[2] = q[2] * len;
-    out[3] = q[3] * len;
-    return out;
-  },
+        // --- Matrix Functions ---
 
-  // --- Matrix Functions ---
+        /**
+         * Creates a 4x4 rotation matrix from a quaternion.
+         * @param {Float32Array} out The receiving 16-element matrix.
+         * @param {Float32Array} q The quaternion.
+         */
+        mat4_fromQuat: function (out, q) {
+          const x = q[0],
+            y = q[1],
+            z = q[2],
+            w = q[3];
+          const x2 = x + x,
+            y2 = y + y,
+            z2 = z + z;
+          const xx = x * x2,
+            xy = x * y2,
+            xz = x * z2;
+          const yy = y * y2,
+            yz = y * z2,
+            zz = z * z2;
+          const wx = w * x2,
+            wy = w * y2,
+            wz = w * z2;
 
-  /**
-   * Creates a 4x4 rotation matrix from a quaternion.
-   * @param {Float32Array} out The receiving 16-element matrix.
-   * @param {Float32Array} q The quaternion.
-   */
-  mat4_fromQuat: function(out, q) {
-    const x = q[0], y = q[1], z = q[2], w = q[3];
-    const x2 = x + x, y2 = y + y, z2 = z + z;
-    const xx = x * x2, xy = x * y2, xz = x * z2;
-    const yy = y * y2, yz = y * z2, zz = z * z2;
-    const wx = w * x2, wy = w * y2, wz = w * z2;
+          out[0] = 1 - (yy + zz);
+          out[1] = xy + wz;
+          out[2] = xz - wy;
+          out[3] = 0;
 
-    out[0] = 1 - (yy + zz);
-    out[1] = xy + wz;
-    out[2] = xz - wy;
-    out[3] = 0;
+          out[4] = xy - wz;
+          out[5] = 1 - (xx + zz);
+          out[6] = yz + wx;
+          out[7] = 0;
 
-    out[4] = xy - wz;
-    out[5] = 1 - (xx + zz);
-    out[6] = yz + wx;
-    out[7] = 0;
+          out[8] = xz + wy;
+          out[9] = yz - wx;
+          out[10] = 1 - (xx + yy);
+          out[11] = 0;
 
-    out[8] = xz + wy;
-    out[9] = yz - wx;
-    out[10] = 1 - (xx + yy);
-    out[11] = 0;
+          out[12] = 0;
+          out[13] = 0;
+          out[14] = 0;
+          out[15] = 1;
+          return out;
+        },
 
-    out[12] = 0;
-    out[13] = 0;
-    out[14] = 0;
-    out[15] = 1;
-    return out;
-  },
+        /**
+         * Transforms a 3D vector by a quaternion.
+         * @param {Array<number>} out The receiving 3-element vector.
+         * @param {Array<number>} v The 3-element vector to transform.
+         * @param {Float32Array} q The quaternion to rotate by.
+         */
+        vec3_transformQuat: function (out, v, q) {
+          // This is a standard, optimized method for vector-quaternion rotation.
+          const qx = q[0],
+            qy = q[1],
+            qz = q[2],
+            qw = q[3];
+          const vx = v[0],
+            vy = v[1],
+            vz = v[2];
 
-  /**
-   * Transforms a 3D vector by a quaternion.
-   * @param {Array<number>} out The receiving 3-element vector.
-   * @param {Array<number>} v The 3-element vector to transform.
-   * @param {Float32Array} q The quaternion to rotate by.
-   */
-  vec3_transformQuat: function(out, v, q) {
-    // This is a standard, optimized method for vector-quaternion rotation.
-    const qx = q[0], qy = q[1], qz = q[2], qw = q[3];
-    const vx = v[0], vy = v[1], vz = v[2];
+          // Calculate uv = 2 * cross(q.xyz, v)
+          const uvx = 2 * (qy * vz - qz * vy);
+          const uvy = 2 * (qz * vx - qx * vz);
+          const uvz = 2 * (qx * vy - qy * vx);
 
-    // Calculate uv = 2 * cross(q.xyz, v)
-    const uvx = 2 * (qy * vz - qz * vy);
-    const uvy = 2 * (qz * vx - qx * vz);
-    const uvz = 2 * (qx * vy - qy * vx);
-
-    // out = v + q.w * uv + cross(q.xyz, uv)
-    out[0] = vx + qw * uvx + (qy * uvz - qz * uvy);
-    out[1] = vy + qw * uvy + (qz * uvx - qx * uvz);
-    out[2] = vz + qw * uvz + (qx * uvy - qy * uvx);
-    return out;
-  },
-
-};
-
+          // out = v + q.w * uv + cross(q.xyz, uv)
+          out[0] = vx + qw * uvx + (qy * uvz - qz * uvy);
+          out[1] = vy + qw * uvy + (qz * uvx - qx * uvz);
+          out[2] = vz + qw * uvz + (qx * uvy - qy * uvx);
+          return out;
+        },
+      };
 
       // 3D Renderer
       class CubeRenderer {
@@ -437,20 +456,54 @@ const Math3D = {
 
         // Map visual face positions to logical faces based on current rotation
         getVisualToLogicalMapping() {
-          // Determine which face is currently on top, front, right, etc.
-          // Based on rotation angles, calculate which logical face is in each visual position
-
-          // Start with identity mapping
-          let mapping = {
-            visualUp: 'U',     // Which logical face is visually on top
-            visualDown: 'D',   // Which logical face is visually on bottom
-            visualRight: 'R',  // Which logical face is visually on right
-            visualLeft: 'L',   // Which logical face is visually on left
-            visualFront: 'F',  // Which logical face is visually in front
-            visualBack: 'B'    // Which logical face is visually in back
+          // Define the standard face normals for each logical face
+          const faceNormals = {
+            U: [0, -1, 0], // Up face points down in our coordinate system
+            D: [0, 1, 0], // Down face points up
+            R: [1, 0, 0], // Right face points right
+            L: [-1, 0, 0], // Left face points left
+            F: [0, 0, -1], // Front face points toward viewer
+            B: [0, 0, 1], // Back face points away from viewer
           };
 
-          // TODO: update this using `this.orientation`
+          // Define visual directions we want to check against
+          const visualDirections = {
+            visualUp: [0, -1, 0], // Visual up is negative Y
+            visualDown: [0, 1, 0], // Visual down is positive Y
+            visualRight: [1, 0, 0], // Visual right is positive X
+            visualLeft: [-1, 0, 0], // Visual left is negative X
+            visualFront: [0, 0, -1], // Visual front is negative Z
+            visualBack: [0, 0, 1], // Visual back is positive Z
+          };
+
+          const mapping = {};
+
+          // For each visual direction, find which logical face is closest to it
+          Object.entries(visualDirections).forEach(([visualPos, visualDir]) => {
+            let bestMatch = null;
+            let bestDot = -2; // Start with impossible dot product value
+
+            // Check each logical face
+            Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
+              // Transform the logical face normal by the current orientation
+              const transformedNormal = [0, 0, 0];
+              Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
+
+              // Calculate dot product to find how aligned they are
+              const dot =
+                transformedNormal[0] * visualDir[0] +
+                transformedNormal[1] * visualDir[1] +
+                transformedNormal[2] * visualDir[2];
+
+              // Keep track of the best match
+              if (dot > bestDot) {
+                bestDot = dot;
+                bestMatch = logicalFace;
+              }
+            });
+
+            mapping[visualPos] = bestMatch;
+          });
 
           return mapping;
         }
@@ -463,16 +516,29 @@ const Math3D = {
 
           let logicalFace;
           switch (baseFace) {
-            case 'U': logicalFace = mapping.visualUp; break;
-            case 'D': logicalFace = mapping.visualDown; break;
-            case 'R': logicalFace = mapping.visualRight; break;
-            case 'L': logicalFace = mapping.visualLeft; break;
-            case 'F': logicalFace = mapping.visualFront; break;
-            case 'B': logicalFace = mapping.visualBack; break;
-            default: throw new Error(`not a move: ${baseFace}`);
+            case 'U':
+              logicalFace = mapping.visualUp;
+              break;
+            case 'D':
+              logicalFace = mapping.visualDown;
+              break;
+            case 'R':
+              logicalFace = mapping.visualRight;
+              break;
+            case 'L':
+              logicalFace = mapping.visualLeft;
+              break;
+            case 'F':
+              logicalFace = mapping.visualFront;
+              break;
+            case 'B':
+              logicalFace = mapping.visualBack;
+              break;
+            default:
+              throw new Error(`not a move: ${baseFace}`);
           }
 
-          return logicalFace + (isPrime ? "'" : "");
+          return logicalFace + (isPrime ? "'" : '');
         }
 
         animateMove(move) {
@@ -805,12 +871,10 @@ const Math3D = {
               ['D', 'F', 'R'], // DFR
               ['D', 'L', 'F'], // DLF
               ['D', 'B', 'L'], // DBL
-              ['D', 'R', 'B']  // DRB
+              ['D', 'R', 'B'], // DRB
             ];
 
-            const faceColorMap = Object.fromEntries(
-              cornerMappings[index].map((face, i) => [face, colors[i]])
-            );
+            const faceColorMap = Object.fromEntries(cornerMappings[index].map((face, i) => [face, colors[i]]));
 
             // Apply orientation
             // Define proper rotation order for each corner position
@@ -826,9 +890,9 @@ const Math3D = {
             };
 
             const rotationOrder = cornerRotationOrders[index];
-            const rotatedMap = Object.fromEntries(rotationOrder.map(
-              (face, i) => [face, faceColorMap[rotationOrder[(i + ori) % 3]]]
-            ));
+            const rotatedMap = Object.fromEntries(
+              rotationOrder.map((face, i) => [face, faceColorMap[rotationOrder[(i + ori) % 3]]]),
+            );
 
             // Draw stickers for each face this corner touches
             const facesToDraw = [];
