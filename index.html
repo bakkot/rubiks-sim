@@ -152,12 +152,12 @@
 
             cyclePieces(pieces, cycle, oriChange = 0) {
                 const isCorner = pieces === this.corners;
-                const last = pieces[cycle.at(-1)];
-                for (let i = 0; i < cycle.length; ++i) {
-                    const piece = i === cycle.length - 1 ? last : pieces[cycle[i]];
-                    const newPos = cycle[(cycle.length + i - 1) % cycle.length];
+                const first = pieces[cycle[0]];
+                for (let i = cycle.length - 1; i >= 0; --i) {
+                    const piece = i === 0 ? first : pieces[cycle[i]];
+                    const newPos = cycle[(i + 1) % cycle.length];
                     const dist = newPos - cycle[i];
-                    const sign = dist % 2 === 0 ? -1 : 1;
+                    const sign = dist % 2 === 0 ? 1 : -1;
                     piece.orientation = ((isCorner ? 3 : 2) + piece.orientation + sign * oriChange) % (isCorner ? 3 : 2);
                     pieces[newPos] = piece;
                 }
@@ -365,15 +365,13 @@
                     let axis, angle;
                     if (face === 'U' || face === 'D') {
                         axis = 'y';
-                        angle = (face === 'U' ? -1 : 1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
+                        angle = (face === 'U' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
                     } else if (face === 'R' || face === 'L') {
                         axis = 'x';
-                        angle = (face === 'R' ? 1 : -1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
+                        angle = (face === 'R' ? 1 : -1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
                     } else if (face === 'F' || face === 'B') {
                         axis = 'z';
-                        // When looking at the F face, clockwise is negative rotation around z
-                        // When looking at the B face from behind, clockwise is positive rotation around z
-                        angle = (face === 'B' ? -1 : 1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
+                        angle = (face === 'B' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
                     }
 
                     const rotation = this.getRotationMatrix(axis, angle);
