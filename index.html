@@ -17,9 +17,14 @@
 
       .main-container {
         display: flex;
+        flex-direction: column;
         align-items: center;
+      }
+
+      .canvas-with-rotation {
+        position: relative;
+        display: flex;
         justify-content: center;
-        gap: 40px;
       }
 
       .canvas-container {
@@ -75,6 +80,10 @@
       }
 
       .rotation-controls {
+        position: absolute;
+        right: -90px;
+        top: 50%;
+        transform: translateY(-50%);
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -176,7 +185,22 @@
     
     <div class="main-container">
       <div class="canvas-container">
-        <canvas id="canvas" width="600" height="600"></canvas>
+        <div class="canvas-with-rotation">
+          <canvas id="canvas" width="600" height="600"></canvas>
+          
+          <div class="rotation-controls">
+            <button class="rotation-button" id="counterclockwise-btn">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 6V9l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z" fill="white"/>
+              </svg>
+            </button>
+            <button class="rotation-button" id="clockwise-btn">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 6V9l-4-4 4-4v3c4.42 0 8 3.58 8 8 0 1.57-.46 3.03-1.24 4.26L17.3 14.8c.45-.83.7-1.79.7-2.8 0-3.31-2.69-6-6-6z" fill="white"/>
+              </svg>
+            </button>
+          </div>
+        </div>
 
         <div class="controls">
           <div class="face-buttons">
@@ -207,19 +231,6 @@
           <button onclick="resetCube()">Reset</button>
           <button onclick="resetOrientation()">Reset Orientation</button>
         </div>
-      </div>
-
-      <div class="rotation-controls">
-        <button class="rotation-button" id="counterclockwise-btn">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 6V9l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z" fill="white"/>
-          </svg>
-        </button>
-        <button class="rotation-button" id="clockwise-btn">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 6V9l-4-4 4-4v3c4.42 0 8 3.58 8 8 0 1.57-.46 3.03-1.24 4.26L17.3 14.8c.45-.83.7-1.79.7-2.8 0-3.31-2.69-6-6-6z" fill="white"/>
-          </svg>
-        </button>
       </div>
     </div>
 
