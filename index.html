@@ -89,40 +89,36 @@
     </div>
 
     <script>
-        // Rubik's Cube Core Library
         class RubiksCube {
             constructor() {
                 this.reset();
             }
 
             reset() {
-                // Initialize pieces
-                // Corners: [position][orientation]
                 this.corners = [
-                    { pos: 0, ori: 0 }, // URF
-                    { pos: 1, ori: 0 }, // UFL
-                    { pos: 2, ori: 0 }, // ULB
-                    { pos: 3, ori: 0 }, // UBR
-                    { pos: 4, ori: 0 }, // DFR
-                    { pos: 5, ori: 0 }, // DLF
-                    { pos: 6, ori: 0 }, // DBL
-                    { pos: 7, ori: 0 }  // DRB
+                    { id: 0, ori: 0 }, // URF
+                    { id: 1, ori: 0 }, // UFL
+                    { id: 2, ori: 0 }, // ULB
+                    { id: 3, ori: 0 }, // UBR
+                    { id: 4, ori: 0 }, // DFR
+                    { id: 5, ori: 0 }, // DLF
+                    { id: 6, ori: 0 }, // DBL
+                    { id: 7, ori: 0 }  // DRB
                 ];
 
-                // Edges: [position][orientation]
                 this.edges = [
-                    { pos: 0, ori: 0 },  // UR
-                    { pos: 1, ori: 0 },  // UF
-                    { pos: 2, ori: 0 },  // UL
-                    { pos: 3, ori: 0 },  // UB
-                    { pos: 4, ori: 0 },  // DR
-                    { pos: 5, ori: 0 },  // DF
-                    { pos: 6, ori: 0 },  // DL
-                    { pos: 7, ori: 0 },  // DB
-                    { pos: 8, ori: 0 },  // FR
-                    { pos: 9, ori: 0 },  // FL
-                    { pos: 10, ori: 0 }, // BL
-                    { pos: 11, ori: 0 }  // BR
+                    { id: 0, ori: 0 },  // UR
+                    { id: 1, ori: 0 },  // UF
+                    { id: 2, ori: 0 },  // UL
+                    { id: 3, ori: 0 },  // UB
+                    { id: 4, ori: 0 },  // DR
+                    { id: 5, ori: 0 },  // DF
+                    { id: 6, ori: 0 },  // DL
+                    { id: 7, ori: 0 },  // DB
+                    { id: 8, ori: 0 },  // FR
+                    { id: 9, ori: 0 },  // FL
+                    { id: 10, ori: 0 }, // BL
+                    { id: 11, ori: 0 }  // BR
                 ];
             }
 
@@ -158,19 +154,14 @@
             // also avoid the finds
             cyclePieces(pieces, cycle, oriChange = 0) {
                 let clone = [...pieces];
-                let relevantPieces = cycle.map(pos => pieces.findIndex(x => x.pos === pos));
-                let rotated = [...relevantPieces];
-                rotated.unshift(rotated.pop());
                 const isCorner = pieces === this.corners;
-                for (let i = 0; i < relevantPieces.length; ++i) {
-                    const { pos, ori } = pieces[relevantPieces[i]];
-                    const newPos = clone[rotated[i]].pos;
-                    const dist = newPos - pos;
+                for (let i = 0; i < cycle.length; ++i) {
+                    const piece = clone[cycle[i]];
+                    const newPos = cycle[(cycle.length + i - 1) % cycle.length];
+                    const dist = newPos - cycle[i];
                     const sign = dist % 2 === 0 ? -1 : 1;
-                    pieces[relevantPieces[i]] = {
-                        pos: newPos,
-                        ori: ((isCorner ? 3 : 2) + ori + sign * oriChange) % (isCorner ? 3 : 2),
-                    };
+                    pieces[newPos] = piece;
+                    pieces[newPos].ori = ((isCorner ? 3 : 2) + piece.ori + sign * oriChange) % (isCorner ? 3 : 2);
                 }
             }
 
@@ -267,14 +258,14 @@
 
                 return {
                     corners: this.corners.map((corner, i) => ({
-                        position: corner.pos,
+                        position: i,
                         orientation: corner.ori,
-                        colors: cornerColors[i]
+                        colors: cornerColors[corner.id]
                     })),
                     edges: this.edges.map((edge, i) => ({
-                        position: edge.pos,
+                        position: i,
                         orientation: edge.ori,
-                        colors: edgeColors[i]
+                        colors: edgeColors[edge.id]
                     }))
                 };
             }
