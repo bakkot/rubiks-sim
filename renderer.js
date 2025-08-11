@@ -165,8 +165,8 @@ class CubeRenderer {
                             { x: offset.x - x + 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 },
                             { x: offset.x - x - 0.45, y: offset.y - y + 0.45, z: offset.z - 1.5 }
                         ];
-                        // Flip the index mapping for back face
-                        index = (2 - row) * 3 + (2 - col);
+                        // Flip only vertically for back face
+                        index = (2 - row) * 3 + col;
                         break;
                 }
 
