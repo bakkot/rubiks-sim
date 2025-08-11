@@ -155,6 +155,7 @@
             }
 
             // todo avoid clones etc
+            // also avoid the finds
             cyclePieces(pieces, cycle, oriChange = 0) {
                 let clone = [...pieces];
                 let relevantPieces = cycle.map(pos => pieces.findIndex(x => x.pos === pos));
@@ -162,11 +163,14 @@
                 rotated.unshift(rotated.pop());
                 const isCorner = pieces === this.corners;
                 for (let i = 0; i < relevantPieces.length; ++i) {
-                    pieces[relevantPieces[i]] = {...pieces[relevantPieces[i]]};
-                    const dist = clone[rotated[i]].pos - pieces[relevantPieces[i]].pos;
-                    pieces[relevantPieces[i]].pos = clone[rotated[i]].pos;
+                    const { pos, ori } = pieces[relevantPieces[i]];
+                    const newPos = clone[rotated[i]].pos;
+                    const dist = newPos - pos;
                     const sign = dist % 2 === 0 ? -1 : 1;
-                    pieces[relevantPieces[i]].ori = ((isCorner ? 3 : 2) + pieces[relevantPieces[i]].ori + sign * oriChange) % (isCorner ? 3 : 2);
+                    pieces[relevantPieces[i]] = {
+                        pos: newPos,
+                        ori: ((isCorner ? 3 : 2) + ori + sign * oriChange) % (isCorner ? 3 : 2),
+                    };
                 }
             }
 
