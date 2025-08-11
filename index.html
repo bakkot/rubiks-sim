@@ -162,8 +162,10 @@
                 rotated.unshift(rotated.pop());
                 const isCorner = pieces === this.corners;
                 for (let i = 0; i < relevantPieces.length; ++i) {
-                    pieces[relevantPieces[i]] = {...clone[rotated[i]]};
-                    const sign = (relevantPieces[i] - rotated[i]) % 2 === 0 ? -1 : 1;
+                    pieces[relevantPieces[i]] = {...pieces[relevantPieces[i]]};
+                    const dist = clone[rotated[i]].pos - pieces[relevantPieces[i]].pos;
+                    pieces[relevantPieces[i]].pos = clone[rotated[i]].pos;
+                    const sign = dist % 2 === 0 ? -1 : 1;
                     pieces[relevantPieces[i]].ori = ((isCorner ? 3 : 2) + pieces[relevantPieces[i]].ori + sign * oriChange) % (isCorner ? 3 : 2);
                 }
             }
