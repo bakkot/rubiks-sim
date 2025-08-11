@@ -1037,17 +1037,78 @@
       const renderer = new CubeRenderer(document.getElementById('canvas'), cube);
 
       // Scramble function
+      // This tries to be clever for the rendering. If doing statistics, be dumb instead.
       async function scrambleCube() {
         const moves = ['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"];
         const scrambleLength = 30 + Math.floor(Math.random() * 11);
 
+        // Helper function to get the base face (without prime)
+        const getBaseFace = (move) => move.replace("'", "");
+
+        // Helper function to get the inverse of a move
+        const getInverse = (move) => move.includes("'") ? move.replace("'", "") : move + "'";
+
+        // Helper function to check if two faces are opposite
+        const areOppositeFaces = (face1, face2) => {
+          const opposites = { 'U': 'D', 'D': 'U', 'R': 'L', 'L': 'R', 'F': 'B', 'B': 'F' };
+          return opposites[face1] === face2;
+        };
+
+        const scramble = [];
+
         for (let i = 0; i < scrambleLength; i++) {
-          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          let validMoves = [...moves];
+
+          if (scramble.length > 0) {
+            const lastMove = scramble[scramble.length - 1];
+            const lastBaseFace = getBaseFace(lastMove);
+
+            // Remove inverse of last move
+            const lastInverse = getInverse(lastMove);
+            validMoves = validMoves.filter(move => move !== lastInverse);
+
+            // If last two moves were on same face, prevent third consecutive same face move
+            if (scramble.length > 1) {
+              const secondLastMove = scramble[scramble.length - 2];
+              const secondLastBaseFace = getBaseFace(secondLastMove);
+
+              if (lastBaseFace === secondLastBaseFace) {
+                // Already have 2 consecutive moves on same face, don't allow a third
+                validMoves = validMoves.filter(move => getBaseFace(move) !== lastBaseFace);
+              }
+
+              // Check for opposite face sandwich patterns
+              // Case 1: U D U' - second-to-last and last are opposite faces
+              if (areOppositeFaces(secondLastBaseFace, lastBaseFace)) {
+                const secondLastInverse = getInverse(secondLastMove);
+                validMoves = validMoves.filter(move => move !== secondLastInverse);
+              }
+
+              // Case 2: U D D U' - need to look back one more step
+              if (scramble.length > 2) {
+                const thirdLastMove = scramble[scramble.length - 3];
+                const thirdLastBaseFace = getBaseFace(thirdLastMove);
+
+                // If last two moves are same face and opposite to third-to-last, avoid third-to-last inverse
+                if (lastBaseFace === secondLastBaseFace && areOppositeFaces(thirdLastBaseFace, lastBaseFace)) {
+                  const thirdLastInverse = getInverse(thirdLastMove);
+                  validMoves = validMoves.filter(move => move !== thirdLastInverse);
+                }
+              }
+            }
+          }
+
+          // If we've filtered out all moves (shouldn't happen with good logic), fall back to rejection
+          if (validMoves.length === 0) {
+            validMoves = [...moves];
+          }
+
+          const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+          scramble.push(randomMove);
           await renderer.animateMove(randomMove);
         }
       }
 
-      // Reset function
       function resetCube() {
         cube.reset();
         renderer.render();
@@ -1059,7 +1120,6 @@
         renderer.render();
       }
 
-      // Z-axis rotation variables
       let isRotating = false;
       let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
       let rotationAnimationId = null;
