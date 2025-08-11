@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #canvas {
+            border: 1px solid #ccc;
+            background-color: #000;
+            cursor: grab;
+        }
+
+        #canvas:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .face-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .face-buttons button {
+            background-color: #2196F3;
+        }
+
+        .face-buttons button:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rubik's Cube Simulator</h1>
+    <canvas id="canvas" width="600" height="600"></canvas>
+
+    <div class="controls">
+        <div class="face-buttons">
+            <button onclick="cube.move('U')">U</button>
+            <button onclick="cube.move('U\\'')">U'</button>
+            <button onclick="cube.move('D')">D</button>
+            <button onclick="cube.move('D\\'')">D'</button>
+            <button onclick="cube.move('R')">R</button>
+            <button onclick="cube.move('R\\'')">R'</button>
+            <button onclick="cube.move('L')">L</button>
+            <button onclick="cube.move('L\\'')">L'</button>
+            <button onclick="cube.move('F')">F</button>
+            <button onclick="cube.move('F\\'')">F'</button>
+            <button onclick="cube.move('B')">B</button>
+            <button onclick="cube.move('B\\'')">B'</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="scrambleCube()">Scramble</button>
+        <button onclick="resetCube()">Reset</button>
+    </div>
+
+    <script>
+        // Rubik's Cube Core Library
+        class RubiksCube {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                // Initialize pieces
+                // Corners: [position][orientation]
+                this.corners = [
+                    { pos: 0, ori: 0 }, // URF
+                    { pos: 1, ori: 0 }, // UFL
+                    { pos: 2, ori: 0 }, // ULB
+                    { pos: 3, ori: 0 }, // UBR
+                    { pos: 4, ori: 0 }, // DFR
+                    { pos: 5, ori: 0 }, // DLF
+                    { pos: 6, ori: 0 }, // DBL
+                    { pos: 7, ori: 0 }  // DRB
+                ];
+
+                // Edges: [position][orientation]
+                this.edges = [
+                    { pos: 0, ori: 0 },  // UR
+                    { pos: 1, ori: 0 },  // UF
+                    { pos: 2, ori: 0 },  // UL
+                    { pos: 3, ori: 0 },  // UB
+                    { pos: 4, ori: 0 },  // DR
+                    { pos: 5, ori: 0 },  // DF
+                    { pos: 6, ori: 0 },  // DL
+                    { pos: 7, ori: 0 },  // DB
+                    { pos: 8, ori: 0 },  // FR
+                    { pos: 9, ori: 0 },  // FL
+                    { pos: 10, ori: 0 }, // BL
+                    { pos: 11, ori: 0 }  // BR
+                ];
+            }
+
+            // Apply a move
+            move(notation) {
+                const moveMap = {
+                    'U': () => this.U(),
+                    'U\'': () => this.Uprime(),
+                    'U2': () => { this.U(); this.U(); },
+                    'D': () => this.D(),
+                    'D\'': () => this.Dprime(),
+                    'D2': () => { this.D(); this.D(); },
+                    'R': () => this.R(),
+                    'R\'': () => this.Rprime(),
+                    'R2': () => { this.R(); this.R(); },
+                    'L': () => this.L(),
+                    'L\'': () => this.Lprime(),
+                    'L2': () => { this.L(); this.L(); },
+                    'F': () => this.F(),
+                    'F\'': () => this.Fprime(),
+                    'F2': () => { this.F(); this.F(); },
+                    'B': () => this.B(),
+                    'B\'': () => this.Bprime(),
+                    'B2': () => { this.B(); this.B(); }
+                };
+
+                if (moveMap[notation]) {
+                    moveMap[notation]();
+                }
+            }
+
+            // Helper function to cycle pieces
+            cyclePieces(pieces, cycle, oriChange = 0) {
+                const temp = [];
+                for (let i = 0; i < cycle.length; i++) {
+                    temp[i] = {
+                        pos: pieces[cycle[i]].pos,
+                        ori: pieces[cycle[i]].ori
+                    };
+                }
+
+                for (let i = 0; i < cycle.length; i++) {
+                    const nextIndex = (i + 1) % cycle.length;
+                    pieces[cycle[nextIndex]].pos = temp[i].pos;
+                    pieces[cycle[nextIndex]].ori = (temp[i].ori + oriChange) % (pieces === this.corners ? 3 : 2);
+                }
+            }
+
+            // Face moves
+            U() {
+                this.cyclePieces(this.corners, [0, 1, 2, 3], 0);
+                this.cyclePieces(this.edges, [0, 1, 2, 3], 0);
+            }
+
+            Uprime() {
+                this.cyclePieces(this.corners, [3, 2, 1, 0], 0);
+                this.cyclePieces(this.edges, [3, 2, 1, 0], 0);
+            }
+
+            D() {
+                this.cyclePieces(this.corners, [4, 7, 6, 5], 0);
+                this.cyclePieces(this.edges, [4, 7, 6, 5], 0);
+            }
+
+            Dprime() {
+                this.cyclePieces(this.corners, [5, 6, 7, 4], 0);
+                this.cyclePieces(this.edges, [5, 6, 7, 4], 0);
+            }
+
+            R() {
+                this.cyclePieces(this.corners, [0, 3, 7, 4], 1);
+                this.cyclePieces(this.edges, [0, 11, 4, 8], 0);
+            }
+
+            Rprime() {
+                this.cyclePieces(this.corners, [4, 7, 3, 0], 2);
+                this.cyclePieces(this.edges, [8, 4, 11, 0], 0);
+            }
+
+            L() {
+                this.cyclePieces(this.corners, [2, 1, 5, 6], 2);
+                this.cyclePieces(this.edges, [2, 9, 6, 10], 0);
+            }
+
+            Lprime() {
+                this.cyclePieces(this.corners, [6, 5, 1, 2], 1);
+                this.cyclePieces(this.edges, [10, 6, 9, 2], 0);
+            }
+
+            F() {
+                this.cyclePieces(this.corners, [1, 0, 4, 5], 1);
+                this.cyclePieces(this.edges, [1, 8, 5, 9], 1);
+            }
+
+            Fprime() {
+                this.cyclePieces(this.corners, [5, 4, 0, 1], 2);
+                this.cyclePieces(this.edges, [9, 5, 8, 1], 1);
+            }
+
+            B() {
+                this.cyclePieces(this.corners, [3, 2, 6, 7], 2);
+                this.cyclePieces(this.edges, [3, 10, 7, 11], 1);
+            }
+
+            Bprime() {
+                this.cyclePieces(this.corners, [7, 6, 2, 3], 1);
+                this.cyclePieces(this.edges, [11, 7, 10, 3], 1);
+            }
+
+            // Get visual representation
+            getVisualState() {
+                // Define color schemes for each piece
+                const cornerColors = [
+                    ['white', 'red', 'green'],     // URF
+                    ['white', 'green', 'orange'],   // UFL
+                    ['white', 'orange', 'blue'],    // ULB
+                    ['white', 'blue', 'red'],       // UBR
+                    ['yellow', 'green', 'red'],     // DFR
+                    ['yellow', 'orange', 'green'],  // DLF
+                    ['yellow', 'blue', 'orange'],   // DBL
+                    ['yellow', 'red', 'blue']       // DRB
+                ];
+
+                const edgeColors = [
+                    ['white', 'red'],     // UR
+                    ['white', 'green'],   // UF
+                    ['white', 'orange'],  // UL
+                    ['white', 'blue'],    // UB
+                    ['yellow', 'red'],    // DR
+                    ['yellow', 'green'],  // DF
+                    ['yellow', 'orange'], // DL
+                    ['yellow', 'blue'],   // DB
+                    ['green', 'red'],     // FR
+                    ['green', 'orange'],  // FL
+                    ['blue', 'orange'],   // BL
+                    ['blue', 'red']       // BR
+                ];
+
+                return {
+                    corners: this.corners.map((corner, i) => ({
+                        position: corner.pos,
+                        orientation: corner.ori,
+                        colors: cornerColors[i]
+                    })),
+                    edges: this.edges.map((edge, i) => ({
+                        position: edge.pos,
+                        orientation: edge.ori,
+                        colors: edgeColors[i]
+                    }))
+                };
+            }
+        }
+
+        // 3D Renderer
+        class CubeRenderer {
+            constructor(canvas, cube) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.cube = cube;
+                this.rotationX = -25;
+                this.rotationY = -35;
+                this.scale = 100;
+
+                this.setupInteraction();
+            }
+
+            setupInteraction() {
+                let isDragging = false;
+                let lastX, lastY;
+
+                this.canvas.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+
+                    const deltaX = e.clientX - lastX;
+                    const deltaY = e.clientY - lastY;
+
+                    this.rotationY += deltaX * 0.5;
+                    this.rotationX += deltaY * 0.5;
+
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+
+                    this.render();
+                });
+
+                window.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+
+            project3D(x, y, z) {
+                // Apply rotations
+                const radX = this.rotationX * Math.PI / 180;
+                const radY = this.rotationY * Math.PI / 180;
+
+                // Rotate around Y axis
+                const x1 = x * Math.cos(radY) - z * Math.sin(radY);
+                const z1 = x * Math.sin(radY) + z * Math.cos(radY);
+
+                // Rotate around X axis
+                const y1 = y * Math.cos(radX) - z1 * Math.sin(radX);
+                const z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+
+                // Project to 2D
+                const perspective = 1000 / (1000 + z2);
+                const projX = x1 * this.scale * perspective + this.canvas.width / 2;
+                const projY = y1 * this.scale * perspective + this.canvas.height / 2;
+
+                return { x: projX, y: projY, z: z2 };
+            }
+
+            drawSticker(corners, color) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(corners[0].x, corners[0].y);
+                for (let i = 1; i < corners.length; i++) {
+                    this.ctx.lineTo(corners[i].x, corners[i].y);
+                }
+                this.ctx.closePath();
+
+                const colorMap = {
+                    'white': '#FFFFFF',
+                    'yellow': '#FFD500',
+                    'red': '#B71234',
+                    'orange': '#FF5800',
+                    'green': '#009E60',
+                    'blue': '#0051BA'
+                };
+
+                this.ctx.fillStyle = colorMap[color] || color;
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                const state = this.cube.getVisualState();
+                const faces = [];
+
+                // Define piece positions and orientations
+                const cornerPositions = [
+                    { x: 1, y: -1, z: -1 },   // URF
+                    { x: -1, y: -1, z: -1 },  // UFL
+                    { x: -1, y: -1, z: 1 },   // ULB
+                    { x: 1, y: -1, z: 1 },    // UBR
+                    { x: 1, y: 1, z: -1 },    // DFR
+                    { x: -1, y: 1, z: -1 },   // DLF
+                    { x: -1, y: 1, z: 1 },    // DBL
+                    { x: 1, y: 1, z: 1 }      // DRB
+                ];
+
+                const edgePositions = [
+                    { x: 1, y: -1, z: 0 },    // UR
+                    { x: 0, y: -1, z: -1 },   // UF
+                    { x: -1, y: -1, z: 0 },   // UL
+                    { x: 0, y: -1, z: 1 },    // UB
+                    { x: 1, y: 1, z: 0 },     // DR
+                    { x: 0, y: 1, z: -1 },    // DF
+                    { x: -1, y: 1, z: 0 },    // DL
+                    { x: 0, y: 1, z: 1 },     // DB
+                    { x: 1, y: 0, z: -1 },    // FR
+                    { x: -1, y: 0, z: -1 },   // FL
+                    { x: -1, y: 0, z: 1 },    // BL
+                    { x: 1, y: 0, z: 1 }      // BR
+                ];
+
+                // Draw center stickers
+                const centers = [
+                    { pos: { x: 0, y: -1, z: 0 }, color: 'white' },  // U
+                    { pos: { x: 0, y: 1, z: 0 }, color: 'yellow' },  // D
+                    { pos: { x: 1, y: 0, z: 0 }, color: 'red' },     // R
+                    { pos: { x: -1, y: 0, z: 0 }, color: 'orange' }, // L
+                    { pos: { x: 0, y: 0, z: -1 }, color: 'green' },  // F
+                    { pos: { x: 0, y: 0, z: 1 }, color: 'blue' }     // B
+                ];
+
+                // Collect all stickers with their z-depth
+                const stickers = [];
+
+                // Add center stickers
+                centers.forEach(center => {
+                    const normal = center.pos;
+                    const tangent1 = normal.x !== 0 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+                    const tangent2 = {
+                        x: normal.y * tangent1.z - normal.z * tangent1.y,
+                        y: normal.z * tangent1.x - normal.x * tangent1.z,
+                        z: normal.x * tangent1.y - normal.y * tangent1.x
+                    };
+
+                    const size = 0.333; // 1/3 of cube edge
+                    const corners = [
+                        this.project3D(
+                            center.pos.x * 1.5 + tangent1.x * size + tangent2.x * size,
+                            center.pos.y * 1.5 + tangent1.y * size + tangent2.y * size,
+                            center.pos.z * 1.5 + tangent1.z * size + tangent2.z * size
+                        ),
+                        this.project3D(
+                            center.pos.x * 1.5 - tangent1.x * size + tangent2.x * size,
+                            center.pos.y * 1.5 - tangent1.y * size + tangent2.y * size,
+                            center.pos.z * 1.5 - tangent1.z * size + tangent2.z * size
+                        ),
+                        this.project3D(
+                            center.pos.x * 1.5 - tangent1.x * size - tangent2.x * size,
+                            center.pos.y * 1.5 - tangent1.y * size - tangent2.y * size,
+                            center.pos.z * 1.5 - tangent1.z * size - tangent2.z * size
+                        ),
+                        this.project3D(
+                            center.pos.x * 1.5 + tangent1.x * size - tangent2.x * size,
+                            center.pos.y * 1.5 + tangent1.y * size - tangent2.y * size,
+                            center.pos.z * 1.5 + tangent1.z * size - tangent2.z * size
+                        )
+                    ];
+
+                    const avgZ = (corners[0].z + corners[1].z + corners[2].z + corners[3].z) / 4;
+                    stickers.push({ corners, color: center.color, z: avgZ });
+                });
+
+
+                // Add edge stickers
+                state.edges.forEach(edge => {
+                    const pos = edgePositions[edge.position];
+                    const colors = edge.colors;
+                    const ori = edge.orientation;
+
+                    // Determine which faces this edge touches
+                    const facesTouchingEdge = [];
+                    if (Math.abs(pos.y) > 0.5) facesTouchingEdge.push(pos.y > 0 ? 'D' : 'U');
+                    if (Math.abs(pos.x) > 0.5) facesTouchingEdge.push(pos.x > 0 ? 'R' : 'L');
+                    if (Math.abs(pos.z) > 0.5) facesTouchingEdge.push(pos.z > 0 ? 'B' : 'F');
+
+                    // Draw stickers
+                    facesTouchingEdge.forEach((face, i) => {
+                        // For edges on the middle layer (FR, FL, BL, BR), we need to adjust the color mapping
+                        let colorIndex;
+                        if (edge.position >= 8 && edge.position <= 11) {
+                            // Middle layer edges - first color goes to F/B face, second to R/L face
+                            if (face === 'F' || face === 'B') {
+                                colorIndex = ori;
+                            } else {
+                                colorIndex = 1 - ori;
+                            }
+                        } else {
+                            // Top/bottom layer edges - standard mapping
+                            colorIndex = (i + ori) % 2;
+                        }
+                        const color = colors[colorIndex];
+
+                let stickerCorners;
+                const size = 0.333; // 1/3 of cube edge
+                if (face === 'U' || face === 'D') {
+                    const y = face === 'U' ? -1.5 : 1.5;
+                    const xCenter = pos.x * 0.667; // Position between center and corner
+                    const zCenter = pos.z * 0.667;
+                    stickerCorners = [
+                        this.project3D(xCenter + size, y, zCenter + size),
+                        this.project3D(xCenter - size, y, zCenter + size),
+                        this.project3D(xCenter - size, y, zCenter - size),
+                        this.project3D(xCenter + size, y, zCenter - size)
+                    ];
+                } else if (face === 'R' || face === 'L') {
+                    const x = face === 'R' ? 1.5 : -1.5;
+                    const yCenter = pos.y * 0.667;
+                    const zCenter = pos.z * 0.667;
+                    stickerCorners = [
+                        this.project3D(x, yCenter + size, zCenter + size),
+                        this.project3D(x, yCenter - size, zCenter + size),
+                        this.project3D(x, yCenter - size, zCenter - size),
+                        this.project3D(x, yCenter + size, zCenter - size)
+                    ];
+                } else {
+                    const z = face === 'F' ? -1.5 : 1.5;
+                    const xCenter = pos.x * 0.667;
+                    const yCenter = pos.y * 0.667;
+                    stickerCorners = [
+                        this.project3D(xCenter + size, yCenter + size, z),
+                        this.project3D(xCenter - size, yCenter + size, z),
+                        this.project3D(xCenter - size, yCenter - size, z),
+                        this.project3D(xCenter + size, yCenter - size, z)
+                    ];
+                }
+
+
+                        const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
+                        stickers.push({ corners: stickerCorners, color, z: avgZ });
+                    });
+                });
+
+                // Add corner stickers
+                state.corners.forEach(corner => {
+                    const pos = cornerPositions[corner.position];
+                    const colors = corner.colors;
+                    const ori = corner.orientation;
+
+                    // Determine which faces this corner touches
+                    const facesTouchingCorner = [];
+                    if (pos.y < 0) facesTouchingCorner.push('U'); else facesTouchingCorner.push('D');
+                    if (pos.z < 0) facesTouchingCorner.push('F'); else facesTouchingCorner.push('B');
+                    if (pos.x > 0) facesTouchingCorner.push('R'); else facesTouchingCorner.push('L');
+
+                    // Draw stickers
+                    facesTouchingCorner.forEach((face, i) => {
+                        const colorIndex = (i + ori) % 3;
+                        const color = colors[colorIndex];
+
+                        let stickerCorners;
+                        const size = 0.333; // 1/3 of cube edge
+
+                        if (face === 'U' || face === 'D') {
+                            const y = face === 'U' ? -1.5 : 1.5;
+                            const xSign = pos.x > 0 ? 1 : -1;
+                            const zSign = pos.z > 0 ? 1 : -1;
+                            const xCenter = xSign * 0.667;
+                            const zCenter = zSign * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
+                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
+                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
+                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
+                            ];
+                        } else if (face === 'R' || face === 'L') {
+                            const x = face === 'R' ? 1.5 : -1.5;
+                            const ySign = pos.y > 0 ? 1 : -1;
+                            const zSign = pos.z > 0 ? 1 : -1;
+                            const yCenter = ySign * 0.667;
+                            const zCenter = zSign * 0.667;
+                            stickerCorners = [
+                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
+                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
+                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
+                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
+                            ];
+                        } else {
+                            const z = face === 'F' ? -1.5 : 1.5;
+                            const xSign = pos.x > 0 ? 1 : -1;
+                            const ySign = pos.y > 0 ? 1 : -1;
+                            const xCenter = xSign * 0.667;
+                            const yCenter = ySign * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
+                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
+                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
+                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
+                            ];
+                        }
+
+                        const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
+                        stickers.push({ corners: stickerCorners, color, z: avgZ });
+                    });
+
+                });
+
+                // Sort stickers by z-depth (back to front)
+                stickers.sort((a, b) => b.z - a.z);
+
+                // Draw all stickers
+                stickers.forEach(sticker => {
+                    this.drawSticker(sticker.corners, sticker.color);
+                });
+            }
+        }
+
+        // Initialize
+        const cube = new RubiksCube();
+        const renderer = new CubeRenderer(document.getElementById('canvas'), cube);
+
+        // Scramble function
+        async function scrambleCube() {
+            const moves = ['U', 'U\'', 'D', 'D\'', 'R', 'R\'', 'L', 'L\'', 'F', 'F\'', 'B', 'B\''];
+            const scrambleLength = 30 + Math.floor(Math.random() * 11); // 30-40 moves
+
+            for (let i = 0; i < scrambleLength; i++) {
+                const randomMove = moves[Math.floor(Math.random() * moves.length)];
+                cube.move(randomMove);
+                renderer.render();
+                await new Promise(resolve => setTimeout(resolve, 50)); // Small delay for animation
+            }
+        }
+
+        // Reset function
+        function resetCube() {
+            cube.reset();
+            renderer.render();
+        }
+
+        // Initial render
+        renderer.render();
+    </script>
+</body>
+</html>
