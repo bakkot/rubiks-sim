@@ -150,18 +150,16 @@
                 }
             }
 
-            // todo avoid clones etc
-            // also avoid the finds
             cyclePieces(pieces, cycle, oriChange = 0) {
-                let clone = [...pieces];
                 const isCorner = pieces === this.corners;
+                const last = pieces[cycle.at(-1)];
                 for (let i = 0; i < cycle.length; ++i) {
-                    const piece = clone[cycle[i]];
+                    const piece = i === cycle.length - 1 ? last : pieces[cycle[i]];
                     const newPos = cycle[(cycle.length + i - 1) % cycle.length];
                     const dist = newPos - cycle[i];
                     const sign = dist % 2 === 0 ? -1 : 1;
+                    piece.ori = ((isCorner ? 3 : 2) + piece.ori + sign * oriChange) % (isCorner ? 3 : 2);
                     pieces[newPos] = piece;
-                    pieces[newPos].ori = ((isCorner ? 3 : 2) + piece.ori + sign * oriChange) % (isCorner ? 3 : 2);
                 }
             }
 
