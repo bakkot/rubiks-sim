@@ -1,753 +1,746 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rubik's Cube Simulator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 20px;
+      }
 
-        #canvas {
-            border: 1px solid #ccc;
-            background-color: #000;
-            cursor: grab;
-        }
+      #canvas {
+        border: 1px solid #ccc;
+        background-color: #000;
+        cursor: grab;
+      }
 
-        #canvas:active {
-            cursor: grabbing;
-        }
+      #canvas:active {
+        cursor: grabbing;
+      }
 
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
+      .controls {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
 
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
+      button {
+        padding: 10px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
 
-        button:hover {
-            background-color: #45a049;
-        }
+      button:hover {
+        background-color: #45a049;
+      }
 
-        .face-buttons {
-            display: flex;
-            gap: 5px;
-        }
+      .face-buttons {
+        display: flex;
+        gap: 5px;
+      }
 
-        .face-buttons button {
-            background-color: #2196F3;
-        }
+      .face-buttons button {
+        background-color: #2196f3;
+      }
 
-        .face-buttons button:hover {
-            background-color: #0b7dda;
-        }
+      .face-buttons button:hover {
+        background-color: #0b7dda;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Rubik's Cube Simulator</h1>
     <canvas id="canvas" width="600" height="600"></canvas>
 
     <div class="controls">
-        <div class="face-buttons">
-            <button onclick="renderer.animateMove('U')">U</button>
-            <button onclick="renderer.animateMove('U\'')">U'</button>
-            <button onclick="renderer.animateMove('D')">D</button>
-            <button onclick="renderer.animateMove('D\'')">D'</button>
-            <button onclick="renderer.animateMove('R')">R</button>
-            <button onclick="renderer.animateMove('R\'')">R'</button>
-            <button onclick="renderer.animateMove('L')">L</button>
-            <button onclick="renderer.animateMove('L\'')">L'</button>
-            <button onclick="renderer.animateMove('F')">F</button>
-            <button onclick="renderer.animateMove('F\'')">F'</button>
-            <button onclick="renderer.animateMove('B')">B</button>
-            <button onclick="renderer.animateMove('B\'')">B'</button>
-        </div>
+      <div class="face-buttons">
+        <button onclick="renderer.animateMove('U')">U</button>
+        <button onclick="renderer.animateMove('U\'')">U'</button>
+        <button onclick="renderer.animateMove('D')">D</button>
+        <button onclick="renderer.animateMove('D\'')">D'</button>
+        <button onclick="renderer.animateMove('R')">R</button>
+        <button onclick="renderer.animateMove('R\'')">R'</button>
+        <button onclick="renderer.animateMove('L')">L</button>
+        <button onclick="renderer.animateMove('L\'')">L'</button>
+        <button onclick="renderer.animateMove('F')">F</button>
+        <button onclick="renderer.animateMove('F\'')">F'</button>
+        <button onclick="renderer.animateMove('B')">B</button>
+        <button onclick="renderer.animateMove('B\'')">B'</button>
+      </div>
     </div>
 
     <div class="controls">
-        <button onclick="scrambleCube()">Scramble</button>
-        <button onclick="resetCube()">Reset</button>
+      <button onclick="scrambleCube()">Scramble</button>
+      <button onclick="resetCube()">Reset</button>
     </div>
 
     <script>
-        class RubiksCube {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                this.corners = [
-                    { id: 0, orientation: 0, colors: ['white', 'red', 'green'] },     // URF
-                    { id: 1, orientation: 0, colors: ['white', 'green', 'orange'] },  // UFL
-                    { id: 2, orientation: 0, colors: ['white', 'orange', 'blue'] },   // ULB
-                    { id: 3, orientation: 0, colors: ['white', 'blue', 'red'] },      // UBR
-                    { id: 4, orientation: 0, colors: ['yellow', 'green', 'red'] },    // DFR
-                    { id: 5, orientation: 0, colors: ['yellow', 'orange', 'green'] }, // DLF
-                    { id: 6, orientation: 0, colors: ['yellow', 'blue', 'orange'] },  // DBL
-                    { id: 7, orientation: 0, colors: ['yellow', 'red', 'blue'] }      // DRB
-                ];
-
-                this.edges = [
-                      { id: 0, orientation: 0, colors: ['white', 'red'] },     // UR
-                      { id: 1, orientation: 0, colors: ['white', 'green'] },   // UF
-                      { id: 2, orientation: 0, colors: ['white', 'orange'] },  // UL
-                      { id: 3, orientation: 0, colors: ['white', 'blue'] },    // UB
-                      { id: 4, orientation: 0, colors: ['yellow', 'red'] },    // DR
-                      { id: 5, orientation: 0, colors: ['yellow', 'green'] },  // DF
-                      { id: 6, orientation: 0, colors: ['yellow', 'orange'] }, // DL
-                      { id: 7, orientation: 0, colors: ['yellow', 'blue'] },   // DB
-                      { id: 8, orientation: 0, colors: ['green', 'red'] },     // FR
-                      { id: 9, orientation: 0, colors: ['green', 'orange'] },  // FL
-                      { id: 10, orientation: 0, colors: ['blue', 'orange'] },  // BL
-                      { id: 11, orientation: 0, colors: ['blue', 'red'] },     // BR
-                ];
-            }
-
-            // Apply a move
-            move(notation) {
-                const moveMap = {
-                    'U': () => this.U(),
-                    'U\'': () => this.Uprime(),
-                    'U2': () => { this.U(); this.U(); },
-                    'D': () => this.D(),
-                    'D\'': () => this.Dprime(),
-                    'D2': () => { this.D(); this.D(); },
-                    'R': () => this.R(),
-                    'R\'': () => this.Rprime(),
-                    'R2': () => { this.R(); this.R(); },
-                    'L': () => this.L(),
-                    'L\'': () => this.Lprime(),
-                    'L2': () => { this.L(); this.L(); },
-                    'F': () => this.F(),
-                    'F\'': () => this.Fprime(),
-                    'F2': () => { this.F(); this.F(); },
-                    'B': () => this.B(),
-                    'B\'': () => this.Bprime(),
-                    'B2': () => { this.B(); this.B(); }
-                };
-
-                if (moveMap[notation]) {
-                    moveMap[notation]();
-                }
-            }
-
-            cyclePieces(pieces, cycle, oriChange = 0) {
-                const isCorner = pieces === this.corners;
-                const first = pieces[cycle[0]];
-                for (let i = cycle.length - 1; i >= 0; --i) {
-                    const piece = i === 0 ? first : pieces[cycle[i]];
-                    const newPos = cycle[(i + 1) % cycle.length];
-                    const dist = newPos - cycle[i];
-                    const sign = dist % 2 === 0 ? 1 : -1;
-                    piece.orientation = ((isCorner ? 3 : 2) + piece.orientation + sign * oriChange) % (isCorner ? 3 : 2);
-                    pieces[newPos] = piece;
-                }
-            }
-
-            // Face moves
-            U() {
-                this.cyclePieces(this.corners, [0, 1, 2, 3], 0);
-                this.cyclePieces(this.edges, [0, 1, 2, 3], 0);
-            }
-
-            Uprime() {
-                this.cyclePieces(this.corners, [3, 2, 1, 0], 0);
-                this.cyclePieces(this.edges, [3, 2, 1, 0], 0);
-            }
-
-            D() {
-                this.cyclePieces(this.corners, [4, 7, 6, 5], 0);
-                this.cyclePieces(this.edges, [4, 7, 6, 5], 0);
-            }
-
-            Dprime() {
-                this.cyclePieces(this.corners, [5, 6, 7, 4], 0);
-                this.cyclePieces(this.edges, [5, 6, 7, 4], 0);
-            }
-
-            R() {
-                this.cyclePieces(this.corners, [0, 3, 7, 4], 1);
-                this.cyclePieces(this.edges, [0, 11, 4, 8], 0);
-            }
-
-            Rprime() {
-                this.cyclePieces(this.corners, [4, 7, 3, 0], 2);
-                this.cyclePieces(this.edges, [8, 4, 11, 0], 0);
-            }
-
-            L() {
-                this.cyclePieces(this.corners, [2, 1, 5, 6], 1);
-                this.cyclePieces(this.edges, [2, 9, 6, 10], 0);
-            }
-
-            Lprime() {
-                this.cyclePieces(this.corners, [6, 5, 1, 2], 2);
-                this.cyclePieces(this.edges, [10, 6, 9, 2], 0);
-            }
-
-            F() {
-                this.cyclePieces(this.corners, [1, 0, 4, 5], 1);
-                this.cyclePieces(this.edges, [1, 8, 5, 9], 1);
-            }
-
-            Fprime() {
-                this.cyclePieces(this.corners, [5, 4, 0, 1], 2);
-                this.cyclePieces(this.edges, [9, 5, 8, 1], 1);
-            }
-
-            B() {
-                this.cyclePieces(this.corners, [3, 2, 6, 7], 1);
-                this.cyclePieces(this.edges, [3, 10, 7, 11], 1);
-            }
-
-            Bprime() {
-                this.cyclePieces(this.corners, [7, 6, 2, 3], 2);
-                this.cyclePieces(this.edges, [11, 7, 10, 3], 1);
-            }
+      class RubiksCube {
+        constructor() {
+          this.reset();
         }
 
-        // 3D Renderer
-        class CubeRenderer {
-            constructor(canvas, cube) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.cube = cube;
-                this.rotationX = 25;
-                this.rotationY = -20;
-                this.scale = 100;
-
-                this.setupInteraction();
-
-                this.animating = false;
-                this.animationQueue = [];
-                this.animationProgress = 0;
-                this.animationDuration = 300; // milliseconds
-                this.currentAnimation = null;
-
-            }
-
-            setupInteraction() {
-                let isDragging = false;
-                let lastX, lastY;
-
-                this.canvas.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-                });
-
-                window.addEventListener('mousemove', (e) => {
-                    if (!isDragging) return;
-
-                    const deltaX = e.clientX - lastX;
-                    const deltaY = e.clientY - lastY;
-
-                    this.rotationY += deltaX * 0.5;
-                    this.rotationX += deltaY * 0.5;
-
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-
-                    this.render();
-                });
-
-                window.addEventListener('mouseup', () => {
-                    isDragging = false;
-                });
-            }
-
-            animateMove(move) {
-                return new Promise(resolve => {
-                    this.animationQueue.push({ move, resolve });
-                    if (!this.animating) {
-                        this.processAnimationQueue();
-                    }
-                });
-            }
-
-            processAnimationQueue() {
-                if (this.animationQueue.length === 0) {
-                    this.animating = false;
-                    return;
-                }
-
-                this.animating = true;
-                const { move, resolve } = this.animationQueue.shift();
-                this.currentAnimation = { move, resolve, startTime: Date.now() };
-
-                const animate = () => {
-                    const elapsed = Date.now() - this.currentAnimation.startTime;
-                    this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
-
-                    this.render();
-
-                    if (this.animationProgress < 1) {
-                        requestAnimationFrame(animate);
-                    } else {
-                        // Apply the actual move to the cube state
-                        this.cube.move(this.currentAnimation.move);
-                        this.animationProgress = 0;
-                        this.currentAnimation.resolve();
-                        this.currentAnimation = null;
-                        this.render();
-                        this.processAnimationQueue();
-                    }
-                };
-
-                animate();
-            }
-
-            getRotationMatrix(axis, angle) {
-                const c = Math.cos(angle);
-                const s = Math.sin(angle);
-
-                if (axis === 'y') {
-                    return {
-                        x: (x, y, z) => x * c - z * s,
-                        y: (x, y, z) => y,
-                        z: (x, y, z) => x * s + z * c
-                    };
-                } else if (axis === 'x') {
-                    return {
-                        x: (x, y, z) => x,
-                        y: (x, y, z) => y * c - z * s,
-                        z: (x, y, z) => y * s + z * c
-                    };
-                } else if (axis === 'z') {
-                    return {
-                        x: (x, y, z) => x * c - y * s,
-                        y: (x, y, z) => x * s + y * c,
-                        z: (x, y, z) => z
-                    };
-                }
-            }
-
-            isPieceAffectedByMove(pieceType, piecePos, move) {
-                const face = move.charAt(0);
-
-                if (face === 'U') return piecePos.y < -0.5;
-                if (face === 'D') return piecePos.y > 0.5;
-                if (face === 'R') return piecePos.x > 0.5;
-                if (face === 'L') return piecePos.x < -0.5;
-                if (face === 'F') return piecePos.z < -0.5;
-                if (face === 'B') return piecePos.z > 0.5;
-
-                return false;
-            }
-
-
-            project3D(x, y, z, applyAnimation) {
-                // Apply animation rotation if active
-                if (applyAnimation && this.currentAnimation) {
-                    const move = this.currentAnimation.move;
-                    const face = move.charAt(0);
-                    const isPrime = move.includes('\'');
-
-                    let axis, angle;
-                    if (face === 'U' || face === 'D') {
-                        axis = 'y';
-                        angle = (face === 'U' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
-                    } else if (face === 'R' || face === 'L') {
-                        axis = 'x';
-                        angle = (face === 'R' ? 1 : -1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
-                    } else if (face === 'F' || face === 'B') {
-                        axis = 'z';
-                        angle = (face === 'B' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
-                    }
-
-                    const rotation = this.getRotationMatrix(axis, angle);
-                    const newX = rotation.x(x, y, z);
-                    const newY = rotation.y(x, y, z);
-                    const newZ = rotation.z(x, y, z);
-                    x = newX;
-                    y = newY;
-                    z = newZ;
-                }
-
-                // Apply rotations
-                const radX = this.rotationX * Math.PI / 180;
-                const radY = this.rotationY * Math.PI / 180;
-
-                // Rotate around Y axis
-                const x1 = x * Math.cos(radY) - z * Math.sin(radY);
-                const z1 = x * Math.sin(radY) + z * Math.cos(radY);
-
-                // Rotate around X axis
-                const y1 = y * Math.cos(radX) - z1 * Math.sin(radX);
-                const z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
-
-                // Project to 2D
-                const perspective = 1000 / (1000 + z2);
-                const projX = x1 * this.scale * perspective + this.canvas.width / 2;
-                const projY = y1 * this.scale * perspective + this.canvas.height / 2;
-
-                return { x: projX, y: projY, z: z2 };
-            }
-
-
-            drawSticker(corners, color) {
-                this.ctx.beginPath();
-                this.ctx.moveTo(corners[0].x, corners[0].y);
-                for (let i = 1; i < corners.length; i++) {
-                    this.ctx.lineTo(corners[i].x, corners[i].y);
-                }
-                this.ctx.closePath();
-
-                const colorMap = {
-                    'white': '#FFFFFF',
-                    'yellow': '#FFD500',
-                    'red': '#B71234',
-                    'orange': '#FF5800',
-                    'green': '#009E60',
-                    'blue': '#0051BA'
-                };
-
-                this.ctx.fillStyle = colorMap[color] || color;
-                this.ctx.fill();
-                this.ctx.strokeStyle = '#000';
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
-            }
-
-            render() {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-                const faces = [];
-
-                // Define piece positions and orientations
-                const cornerPositions = [
-                    { x: 1, y: -1, z: -1 },   // URF
-                    { x: -1, y: -1, z: -1 },  // UFL
-                    { x: -1, y: -1, z: 1 },   // ULB
-                    { x: 1, y: -1, z: 1 },    // UBR
-                    { x: 1, y: 1, z: -1 },    // DFR
-                    { x: -1, y: 1, z: -1 },   // DLF
-                    { x: -1, y: 1, z: 1 },    // DBL
-                    { x: 1, y: 1, z: 1 }      // DRB
-                ];
-
-                const edgePositions = [
-                    { x: 1, y: -1, z: 0 },    // UR
-                    { x: 0, y: -1, z: -1 },   // UF
-                    { x: -1, y: -1, z: 0 },   // UL
-                    { x: 0, y: -1, z: 1 },    // UB
-                    { x: 1, y: 1, z: 0 },     // DR
-                    { x: 0, y: 1, z: -1 },    // DF
-                    { x: -1, y: 1, z: 0 },    // DL
-                    { x: 0, y: 1, z: 1 },     // DB
-                    { x: 1, y: 0, z: -1 },    // FR
-                    { x: -1, y: 0, z: -1 },   // FL
-                    { x: -1, y: 0, z: 1 },    // BL
-                    { x: 1, y: 0, z: 1 }      // BR
-                ];
-
-                // Draw center stickers
-                const centers = [
-                    { pos: { x: 0, y: -1, z: 0 }, color: 'white' },  // U
-                    { pos: { x: 0, y: 1, z: 0 }, color: 'yellow' },  // D
-                    { pos: { x: 1, y: 0, z: 0 }, color: 'red' },     // R
-                    { pos: { x: -1, y: 0, z: 0 }, color: 'orange' }, // L
-                    { pos: { x: 0, y: 0, z: -1 }, color: 'green' },  // F
-                    { pos: { x: 0, y: 0, z: 1 }, color: 'blue' }     // B
-                ];
-
-                // Collect all stickers with their z-depth
-                const stickers = [];
-
-                // Add center stickers
-                centers.forEach(center => {
-                    const normal = center.pos;
-                    const tangent1 = normal.x !== 0 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
-                    const tangent2 = {
-                        x: normal.y * tangent1.z - normal.z * tangent1.y,
-                        y: normal.z * tangent1.x - normal.x * tangent1.z,
-                        z: normal.x * tangent1.y - normal.y * tangent1.x
-                    };
-
-                    const size = 0.333; // 1/3 of cube edge
-                    const faceDistance = 1.01; // Slightly outside the cube center
-                    const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move);
-
-                    const corners = [
-                        this.project3D(
-                            center.pos.x * faceDistance + tangent1.x * size + tangent2.x * size,
-                            center.pos.y * faceDistance + tangent1.y * size + tangent2.y * size,
-                            center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size,
-                            shouldAnimate
-                        ),
-                        this.project3D(
-                            center.pos.x * faceDistance - tangent1.x * size + tangent2.x * size,
-                            center.pos.y * faceDistance - tangent1.y * size + tangent2.y * size,
-                            center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size,
-                            shouldAnimate
-                        ),
-                        this.project3D(
-                            center.pos.x * faceDistance - tangent1.x * size - tangent2.x * size,
-                            center.pos.y * faceDistance - tangent1.y * size - tangent2.y * size,
-                            center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size,
-                            shouldAnimate
-                        ),
-                        this.project3D(
-                            center.pos.x * faceDistance + tangent1.x * size - tangent2.x * size,
-                            center.pos.y * faceDistance + tangent1.y * size - tangent2.y * size,
-                            center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size,
-                            shouldAnimate
-                        )
-                    ];
-
-                    const avgZ = (corners[0].z + corners[1].z + corners[2].z + corners[3].z) / 4;
-                    stickers.push({ corners, color: center.color, z: avgZ });
-                });
-
-
-                // Add edge stickers
-                this.cube.edges.forEach((edge, index) => {
-                    const pos = edgePositions[index];
-                    const colors = edge.colors;
-                    const ori = edge.orientation;
-
-                    // Determine which faces this edge touches
-                    const facesTouchingEdge = [];
-                    if (Math.abs(pos.y) > 0.5) facesTouchingEdge.push(pos.y > 0 ? 'D' : 'U');
-                    if (Math.abs(pos.x) > 0.5) facesTouchingEdge.push(pos.x > 0 ? 'R' : 'L');
-                    if (Math.abs(pos.z) > 0.5) facesTouchingEdge.push(pos.z > 0 ? 'B' : 'F');
-
-                    // Draw stickers
-                    facesTouchingEdge.forEach((face, i) => {
-                        // For edges on the middle layer (FR, FL, BL, BR), we need to adjust the color mapping
-                        let colorIndex;
-                        if (index >= 8 && index <= 11) {
-                            // Middle layer edges - first color goes to F/B face, second to R/L face
-                            if (face === 'F' || face === 'B') {
-                                colorIndex = ori;
-                            } else {
-                                colorIndex = 1 - ori;
-                            }
-                        } else {
-                            // Top/bottom layer edges - standard mapping
-                            colorIndex = (i + ori) % 2;
-                        }
-                        const color = colors[colorIndex];
-
-                        let stickerCorners;
-                        const size = 0.333; // 1/3 of cube edge
-                        const faceDistance = 1.01; // Slightly outside the cube center
-                        const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move);
-
-                        if (face === 'U' || face === 'D') {
-                            const y = (face === 'U' ? -1 : 1) * faceDistance;
-                            const xCenter = pos.x * 0.667;
-                            const zCenter = pos.z * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + size, y, zCenter + size, shouldAnimate),
-                                this.project3D(xCenter - size, y, zCenter + size, shouldAnimate),
-                                this.project3D(xCenter - size, y, zCenter - size, shouldAnimate),
-                                this.project3D(xCenter + size, y, zCenter - size, shouldAnimate)
-                            ];
-                        } else if (face === 'R' || face === 'L') {
-                            const x = (face === 'R' ? 1 : -1) * faceDistance;
-                            const yCenter = pos.y * 0.667;
-                            const zCenter = pos.z * 0.667;
-                            stickerCorners = [
-                                this.project3D(x, yCenter + size, zCenter + size, shouldAnimate),
-                                this.project3D(x, yCenter - size, zCenter + size, shouldAnimate),
-                                this.project3D(x, yCenter - size, zCenter - size, shouldAnimate),
-                                this.project3D(x, yCenter + size, zCenter - size, shouldAnimate)
-                            ];
-                        } else {
-                            const z = (face === 'F' ? -1 : 1) * faceDistance;
-                            const xCenter = pos.x * 0.667;
-                            const yCenter = pos.y * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + size, yCenter + size, z, shouldAnimate),
-                                this.project3D(xCenter - size, yCenter + size, z, shouldAnimate),
-                                this.project3D(xCenter - size, yCenter - size, z, shouldAnimate),
-                                this.project3D(xCenter + size, yCenter - size, z, shouldAnimate)
-                            ];
-                        }
-
-
-                        const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
-                        stickers.push({ corners: stickerCorners, color, z: avgZ });
-                    });
-                });
-
-                // Add corner stickers
-                this.cube.corners.forEach((corner, index) => {
-                    const pos = cornerPositions[index];
-                    const colors = corner.colors;
-                    const ori = corner.orientation;
-
-                    // Map each face to its color based on position
-                    const faceColorMap = {};
-
-                    // Determine color mapping based on the specific corner position
-                    if (index === 0) { // URF
-                        faceColorMap['U'] = colors[0];
-                        faceColorMap['R'] = colors[1];
-                        faceColorMap['F'] = colors[2];
-                    } else if (index === 1) { // UFL
-                        faceColorMap['U'] = colors[0];
-                        faceColorMap['F'] = colors[1];
-                        faceColorMap['L'] = colors[2];
-                    } else if (index === 2) { // ULB
-                        faceColorMap['U'] = colors[0];
-                        faceColorMap['L'] = colors[1];
-                        faceColorMap['B'] = colors[2];
-                    } else if (index === 3) { // UBR
-                        faceColorMap['U'] = colors[0];
-                        faceColorMap['B'] = colors[1];
-                        faceColorMap['R'] = colors[2];
-                    } else if (index === 4) { // DFR
-                        faceColorMap['D'] = colors[0];
-                        faceColorMap['F'] = colors[1];
-                        faceColorMap['R'] = colors[2];
-                    } else if (index === 5) { // DLF
-                        faceColorMap['D'] = colors[0];
-                        faceColorMap['L'] = colors[1];
-                        faceColorMap['F'] = colors[2];
-                    } else if (index === 6) { // DBL
-                        faceColorMap['D'] = colors[0];
-                        faceColorMap['B'] = colors[1];
-                        faceColorMap['L'] = colors[2];
-                    } else if (index === 7) { // DRB
-                        faceColorMap['D'] = colors[0];
-                        faceColorMap['R'] = colors[1];
-                        faceColorMap['B'] = colors[2];
-                    }
-
-                    // Apply orientation
-                    // Define proper rotation order for each corner position
-                    const cornerRotationOrders = {
-                        0: ['U', 'R', 'F'], // URF
-                        1: ['U', 'F', 'L'], // UFL
-                        2: ['U', 'L', 'B'], // ULB
-                        3: ['U', 'B', 'R'], // UBR
-                        4: ['D', 'F', 'R'], // DFR
-                        5: ['D', 'L', 'F'], // DLF
-                        6: ['D', 'B', 'L'], // DBL
-                        7: ['D', 'R', 'B']  // DRB
-                    };
-
-                    const rotatedMap = {};
-                    const rotationOrder = cornerRotationOrders[index];
-                    rotationOrder.forEach((face, i) => {
-                        rotatedMap[face] = faceColorMap[rotationOrder[(i + ori) % 3]];
-                    });
-
-                    // Draw stickers for each face this corner touches
-                    const facesToDraw = [];
-                    if (pos.y < 0) facesToDraw.push('U');
-                    else facesToDraw.push('D');
-                    if (pos.x > 0) facesToDraw.push('R');
-                    else facesToDraw.push('L');
-                    if (pos.z < 0) facesToDraw.push('F');
-                    else facesToDraw.push('B');
-
-                    facesToDraw.forEach(face => {
-                        const color = rotatedMap[face];
-
-                        let stickerCorners;
-                        const size = 0.333;
-                        const faceDistance = 1.01;
-                        const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move);
-
-                        if (face === 'U' || face === 'D') {
-                            const y = (face === 'U' ? -1 : 1) * faceDistance;
-                            const xSign = pos.x > 0 ? 1 : -1;
-                            const zSign = pos.z > 0 ? 1 : -1;
-                            const xCenter = xSign * 0.667;
-                            const zCenter = zSign * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size, shouldAnimate),
-                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size, shouldAnimate),
-                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size, shouldAnimate),
-                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size, shouldAnimate)
-                            ];
-                        } else if (face === 'R' || face === 'L') {
-                            const x = (face === 'R' ? 1 : -1) * faceDistance;
-                            const ySign = pos.y > 0 ? 1 : -1;
-                            const zSign = pos.z > 0 ? 1 : -1;
-                            const yCenter = ySign * 0.667;
-                            const zCenter = zSign * 0.667;
-                            stickerCorners = [
-                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size, shouldAnimate),
-                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size, shouldAnimate),
-                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size, shouldAnimate),
-                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size, shouldAnimate)
-                            ];
-                        } else {
-                            const z = (face === 'F' ? -1 : 1) * faceDistance;
-                            const xSign = pos.x > 0 ? 1 : -1;
-                            const ySign = pos.y > 0 ? 1 : -1;
-                            const xCenter = xSign * 0.667;
-                            const yCenter = ySign * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z, shouldAnimate),
-                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z, shouldAnimate),
-                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z, shouldAnimate),
-                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z, shouldAnimate)
-                            ];
-                        }
-
-                        const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
-                        stickers.push({ corners: stickerCorners, color, z: avgZ });
-                    });
-                });
-
-                // Sort stickers by z-depth (back to front)
-                stickers.sort((a, b) => b.z - a.z);
-
-                // Draw all stickers
-                stickers.forEach(sticker => {
-                    this.drawSticker(sticker.corners, sticker.color);
-                });
-            }
+        reset() {
+          this.corners = [
+            { id: 0, orientation: 0, colors: ['white', 'red', 'green'] }, // URF
+            { id: 1, orientation: 0, colors: ['white', 'green', 'orange'] }, // UFL
+            { id: 2, orientation: 0, colors: ['white', 'orange', 'blue'] }, // ULB
+            { id: 3, orientation: 0, colors: ['white', 'blue', 'red'] }, // UBR
+            { id: 4, orientation: 0, colors: ['yellow', 'green', 'red'] }, // DFR
+            { id: 5, orientation: 0, colors: ['yellow', 'orange', 'green'] }, // DLF
+            { id: 6, orientation: 0, colors: ['yellow', 'blue', 'orange'] }, // DBL
+            { id: 7, orientation: 0, colors: ['yellow', 'red', 'blue'] }, // DRB
+          ];
+
+          this.edges = [
+            { id: 0, orientation: 0, colors: ['white', 'red'] }, // UR
+            { id: 1, orientation: 0, colors: ['white', 'green'] }, // UF
+            { id: 2, orientation: 0, colors: ['white', 'orange'] }, // UL
+            { id: 3, orientation: 0, colors: ['white', 'blue'] }, // UB
+            { id: 4, orientation: 0, colors: ['yellow', 'red'] }, // DR
+            { id: 5, orientation: 0, colors: ['yellow', 'green'] }, // DF
+            { id: 6, orientation: 0, colors: ['yellow', 'orange'] }, // DL
+            { id: 7, orientation: 0, colors: ['yellow', 'blue'] }, // DB
+            { id: 8, orientation: 0, colors: ['green', 'red'] }, // FR
+            { id: 9, orientation: 0, colors: ['green', 'orange'] }, // FL
+            { id: 10, orientation: 0, colors: ['blue', 'orange'] }, // BL
+            { id: 11, orientation: 0, colors: ['blue', 'red'] }, // BR
+          ];
         }
 
-        // Initialize
-        const cube = new RubiksCube();
-        const renderer = new CubeRenderer(document.getElementById('canvas'), cube);
+        // Apply a move
+        move(notation) {
+          const moveMap = {
+            U: () => this.U(),
+            "U'": () => this.Uprime(),
+            U2: () => {
+              this.U();
+              this.U();
+            },
+            D: () => this.D(),
+            "D'": () => this.Dprime(),
+            D2: () => {
+              this.D();
+              this.D();
+            },
+            R: () => this.R(),
+            "R'": () => this.Rprime(),
+            R2: () => {
+              this.R();
+              this.R();
+            },
+            L: () => this.L(),
+            "L'": () => this.Lprime(),
+            L2: () => {
+              this.L();
+              this.L();
+            },
+            F: () => this.F(),
+            "F'": () => this.Fprime(),
+            F2: () => {
+              this.F();
+              this.F();
+            },
+            B: () => this.B(),
+            "B'": () => this.Bprime(),
+            B2: () => {
+              this.B();
+              this.B();
+            },
+          };
 
-        // Scramble function
-        async function scrambleCube() {
-            const moves = ['U', 'U\'', 'D', 'D\'', 'R', 'R\'', 'L', 'L\'', 'F', 'F\'', 'B', 'B\''];
-            const scrambleLength = 30 + Math.floor(Math.random() * 11);
+          if (moveMap[notation]) {
+            moveMap[notation]();
+          }
+        }
 
-            for (let i = 0; i < scrambleLength; i++) {
-                const randomMove = moves[Math.floor(Math.random() * moves.length)];
-                await renderer.animateMove(randomMove);
+        cyclePieces(pieces, cycle, oriChange = 0) {
+          const isCorner = pieces === this.corners;
+          const first = pieces[cycle[0]];
+          for (let i = cycle.length - 1; i >= 0; --i) {
+            const piece = i === 0 ? first : pieces[cycle[i]];
+            const newPos = cycle[(i + 1) % cycle.length];
+            const dist = newPos - cycle[i];
+            const sign = dist % 2 === 0 ? 1 : -1;
+            piece.orientation = ((isCorner ? 3 : 2) + piece.orientation + sign * oriChange) % (isCorner ? 3 : 2);
+            pieces[newPos] = piece;
+          }
+        }
+
+        // Face moves
+        U() {
+          this.cyclePieces(this.corners, [0, 1, 2, 3], 0);
+          this.cyclePieces(this.edges, [0, 1, 2, 3], 0);
+        }
+
+        Uprime() {
+          this.cyclePieces(this.corners, [3, 2, 1, 0], 0);
+          this.cyclePieces(this.edges, [3, 2, 1, 0], 0);
+        }
+
+        D() {
+          this.cyclePieces(this.corners, [4, 7, 6, 5], 0);
+          this.cyclePieces(this.edges, [4, 7, 6, 5], 0);
+        }
+
+        Dprime() {
+          this.cyclePieces(this.corners, [5, 6, 7, 4], 0);
+          this.cyclePieces(this.edges, [5, 6, 7, 4], 0);
+        }
+
+        R() {
+          this.cyclePieces(this.corners, [0, 3, 7, 4], 1);
+          this.cyclePieces(this.edges, [0, 11, 4, 8], 0);
+        }
+
+        Rprime() {
+          this.cyclePieces(this.corners, [4, 7, 3, 0], 2);
+          this.cyclePieces(this.edges, [8, 4, 11, 0], 0);
+        }
+
+        L() {
+          this.cyclePieces(this.corners, [2, 1, 5, 6], 1);
+          this.cyclePieces(this.edges, [2, 9, 6, 10], 0);
+        }
+
+        Lprime() {
+          this.cyclePieces(this.corners, [6, 5, 1, 2], 2);
+          this.cyclePieces(this.edges, [10, 6, 9, 2], 0);
+        }
+
+        F() {
+          this.cyclePieces(this.corners, [1, 0, 4, 5], 1);
+          this.cyclePieces(this.edges, [1, 8, 5, 9], 1);
+        }
+
+        Fprime() {
+          this.cyclePieces(this.corners, [5, 4, 0, 1], 2);
+          this.cyclePieces(this.edges, [9, 5, 8, 1], 1);
+        }
+
+        B() {
+          this.cyclePieces(this.corners, [3, 2, 6, 7], 1);
+          this.cyclePieces(this.edges, [3, 10, 7, 11], 1);
+        }
+
+        Bprime() {
+          this.cyclePieces(this.corners, [7, 6, 2, 3], 2);
+          this.cyclePieces(this.edges, [11, 7, 10, 3], 1);
+        }
+      }
+
+      // 3D Renderer
+      class CubeRenderer {
+        constructor(canvas, cube) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d');
+          this.cube = cube;
+          this.rotationX = 25;
+          this.rotationY = -20;
+          this.scale = 100;
+
+          this.setupInteraction();
+
+          this.animating = false;
+          this.animationQueue = [];
+          this.animationProgress = 0;
+          this.animationDuration = 300; // milliseconds
+          this.currentAnimation = null;
+        }
+
+        setupInteraction() {
+          let isDragging = false;
+          let lastX, lastY;
+
+          this.canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+          });
+
+          window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - lastX;
+            const deltaY = e.clientY - lastY;
+
+            this.rotationY += deltaX * 0.5;
+            this.rotationX += deltaY * 0.5;
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            this.render();
+          });
+
+          window.addEventListener('mouseup', () => {
+            isDragging = false;
+          });
+        }
+
+        animateMove(move) {
+          return new Promise(resolve => {
+            this.animationQueue.push({ move, resolve });
+            if (!this.animating) {
+              this.processAnimationQueue();
             }
+          });
         }
 
+        processAnimationQueue() {
+          if (this.animationQueue.length === 0) {
+            this.animating = false;
+            return;
+          }
 
-        // Reset function
-        function resetCube() {
-            cube.reset();
-            renderer.render();
+          this.animating = true;
+          const { move, resolve } = this.animationQueue.shift();
+          this.currentAnimation = { move, resolve, startTime: Date.now() };
+
+          const animate = () => {
+            const elapsed = Date.now() - this.currentAnimation.startTime;
+            this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
+
+            this.render();
+
+            if (this.animationProgress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              // Apply the actual move to the cube state
+              this.cube.move(this.currentAnimation.move);
+              this.animationProgress = 0;
+              this.currentAnimation.resolve();
+              this.currentAnimation = null;
+              this.render();
+              this.processAnimationQueue();
+            }
+          };
+
+          animate();
         }
 
-        // Initial render
+        getRotationMatrix(axis, angle) {
+          const c = Math.cos(angle);
+          const s = Math.sin(angle);
+
+          if (axis === 'y') {
+            return {
+              x: (x, y, z) => x * c - z * s,
+              y: (x, y, z) => y,
+              z: (x, y, z) => x * s + z * c,
+            };
+          } else if (axis === 'x') {
+            return {
+              x: (x, y, z) => x,
+              y: (x, y, z) => y * c - z * s,
+              z: (x, y, z) => y * s + z * c,
+            };
+          } else if (axis === 'z') {
+            return {
+              x: (x, y, z) => x * c - y * s,
+              y: (x, y, z) => x * s + y * c,
+              z: (x, y, z) => z,
+            };
+          }
+        }
+
+        isPieceAffectedByMove(pieceType, piecePos, move) {
+          const face = move.charAt(0);
+
+          if (face === 'U') return piecePos.y < -0.5;
+          if (face === 'D') return piecePos.y > 0.5;
+          if (face === 'R') return piecePos.x > 0.5;
+          if (face === 'L') return piecePos.x < -0.5;
+          if (face === 'F') return piecePos.z < -0.5;
+          if (face === 'B') return piecePos.z > 0.5;
+
+          return false;
+        }
+
+        project3D(x, y, z, applyAnimation) {
+          // Apply animation rotation if active
+          if (applyAnimation && this.currentAnimation) {
+            const move = this.currentAnimation.move;
+            const face = move.charAt(0);
+            const isPrime = move.includes("'");
+
+            let axis, angle;
+            if (face === 'U' || face === 'D') {
+              axis = 'y';
+              angle = (((face === 'U' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.animationProgress;
+            } else if (face === 'R' || face === 'L') {
+              axis = 'x';
+              angle = (((face === 'R' ? 1 : -1) * (isPrime ? 1 : -1) * Math.PI) / 2) * this.animationProgress;
+            } else if (face === 'F' || face === 'B') {
+              axis = 'z';
+              angle = (((face === 'B' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.animationProgress;
+            }
+
+            const rotation = this.getRotationMatrix(axis, angle);
+            const newX = rotation.x(x, y, z);
+            const newY = rotation.y(x, y, z);
+            const newZ = rotation.z(x, y, z);
+            x = newX;
+            y = newY;
+            z = newZ;
+          }
+
+          // Apply rotations
+          const radX = (this.rotationX * Math.PI) / 180;
+          const radY = (this.rotationY * Math.PI) / 180;
+
+          // Rotate around Y axis
+          const x1 = x * Math.cos(radY) - z * Math.sin(radY);
+          const z1 = x * Math.sin(radY) + z * Math.cos(radY);
+
+          // Rotate around X axis
+          const y1 = y * Math.cos(radX) - z1 * Math.sin(radX);
+          const z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+
+          // Project to 2D
+          const perspective = 1000 / (1000 + z2);
+          const projX = x1 * this.scale * perspective + this.canvas.width / 2;
+          const projY = y1 * this.scale * perspective + this.canvas.height / 2;
+
+          return { x: projX, y: projY, z: z2 };
+        }
+
+        drawSticker(corners, color) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(corners[0].x, corners[0].y);
+          for (let i = 1; i < corners.length; i++) {
+            this.ctx.lineTo(corners[i].x, corners[i].y);
+          }
+          this.ctx.closePath();
+
+          const colorMap = {
+            white: '#FFFFFF',
+            yellow: '#FFD500',
+            red: '#B71234',
+            orange: '#FF5800',
+            green: '#009E60',
+            blue: '#0051BA',
+          };
+
+          this.ctx.fillStyle = colorMap[color] || color;
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#000';
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
+        }
+
+        render() {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+          const faces = [];
+
+          // Define piece positions and orientations
+          const cornerPositions = [
+            { x: 1, y: -1, z: -1 }, // URF
+            { x: -1, y: -1, z: -1 }, // UFL
+            { x: -1, y: -1, z: 1 }, // ULB
+            { x: 1, y: -1, z: 1 }, // UBR
+            { x: 1, y: 1, z: -1 }, // DFR
+            { x: -1, y: 1, z: -1 }, // DLF
+            { x: -1, y: 1, z: 1 }, // DBL
+            { x: 1, y: 1, z: 1 }, // DRB
+          ];
+
+          const edgePositions = [
+            { x: 1, y: -1, z: 0 }, // UR
+            { x: 0, y: -1, z: -1 }, // UF
+            { x: -1, y: -1, z: 0 }, // UL
+            { x: 0, y: -1, z: 1 }, // UB
+            { x: 1, y: 1, z: 0 }, // DR
+            { x: 0, y: 1, z: -1 }, // DF
+            { x: -1, y: 1, z: 0 }, // DL
+            { x: 0, y: 1, z: 1 }, // DB
+            { x: 1, y: 0, z: -1 }, // FR
+            { x: -1, y: 0, z: -1 }, // FL
+            { x: -1, y: 0, z: 1 }, // BL
+            { x: 1, y: 0, z: 1 }, // BR
+          ];
+
+          // Draw center stickers
+          const centers = [
+            { pos: { x: 0, y: -1, z: 0 }, color: 'white' }, // U
+            { pos: { x: 0, y: 1, z: 0 }, color: 'yellow' }, // D
+            { pos: { x: 1, y: 0, z: 0 }, color: 'red' }, // R
+            { pos: { x: -1, y: 0, z: 0 }, color: 'orange' }, // L
+            { pos: { x: 0, y: 0, z: -1 }, color: 'green' }, // F
+            { pos: { x: 0, y: 0, z: 1 }, color: 'blue' }, // B
+          ];
+
+          // Collect all stickers with their z-depth
+          const stickers = [];
+
+          // Add center stickers
+          centers.forEach(center => {
+            const normal = center.pos;
+            const tangent1 = normal.x !== 0 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+            const tangent2 = {
+              x: normal.y * tangent1.z - normal.z * tangent1.y,
+              y: normal.z * tangent1.x - normal.x * tangent1.z,
+              z: normal.x * tangent1.y - normal.y * tangent1.x,
+            };
+
+            const size = 0.333; // 1/3 of cube edge
+            const faceDistance = 1.01; // Slightly outside the cube center
+            const shouldAnimate =
+              this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move);
+
+            const corners = [
+              this.project3D(
+                center.pos.x * faceDistance + tangent1.x * size + tangent2.x * size,
+                center.pos.y * faceDistance + tangent1.y * size + tangent2.y * size,
+                center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size,
+                shouldAnimate,
+              ),
+              this.project3D(
+                center.pos.x * faceDistance - tangent1.x * size + tangent2.x * size,
+                center.pos.y * faceDistance - tangent1.y * size + tangent2.y * size,
+                center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size,
+                shouldAnimate,
+              ),
+              this.project3D(
+                center.pos.x * faceDistance - tangent1.x * size - tangent2.x * size,
+                center.pos.y * faceDistance - tangent1.y * size - tangent2.y * size,
+                center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size,
+                shouldAnimate,
+              ),
+              this.project3D(
+                center.pos.x * faceDistance + tangent1.x * size - tangent2.x * size,
+                center.pos.y * faceDistance + tangent1.y * size - tangent2.y * size,
+                center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size,
+                shouldAnimate,
+              ),
+            ];
+
+            const avgZ = (corners[0].z + corners[1].z + corners[2].z + corners[3].z) / 4;
+            stickers.push({ corners, color: center.color, z: avgZ });
+          });
+
+          // Add edge stickers
+          this.cube.edges.forEach((edge, index) => {
+            const pos = edgePositions[index];
+            const colors = edge.colors;
+            const ori = edge.orientation;
+
+            // Determine which faces this edge touches
+            const facesTouchingEdge = [];
+            if (Math.abs(pos.y) > 0.5) facesTouchingEdge.push(pos.y > 0 ? 'D' : 'U');
+            if (Math.abs(pos.x) > 0.5) facesTouchingEdge.push(pos.x > 0 ? 'R' : 'L');
+            if (Math.abs(pos.z) > 0.5) facesTouchingEdge.push(pos.z > 0 ? 'B' : 'F');
+
+            // Draw stickers
+            facesTouchingEdge.forEach((face, i) => {
+              // For edges on the middle layer (FR, FL, BL, BR), we need to adjust the color mapping
+              let colorIndex;
+              if (index >= 8 && index <= 11) {
+                // Middle layer edges - first color goes to F/B face, second to R/L face
+                if (face === 'F' || face === 'B') {
+                  colorIndex = ori;
+                } else {
+                  colorIndex = 1 - ori;
+                }
+              } else {
+                // Top/bottom layer edges - standard mapping
+                colorIndex = (i + ori) % 2;
+              }
+              const color = colors[colorIndex];
+
+              let stickerCorners;
+              const size = 0.333; // 1/3 of cube edge
+              const faceDistance = 1.01; // Slightly outside the cube center
+              const shouldAnimate =
+                this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move);
+
+              if (face === 'U' || face === 'D') {
+                const y = (face === 'U' ? -1 : 1) * faceDistance;
+                const xCenter = pos.x * 0.667;
+                const zCenter = pos.z * 0.667;
+                stickerCorners = [
+                  this.project3D(xCenter + size, y, zCenter + size, shouldAnimate),
+                  this.project3D(xCenter - size, y, zCenter + size, shouldAnimate),
+                  this.project3D(xCenter - size, y, zCenter - size, shouldAnimate),
+                  this.project3D(xCenter + size, y, zCenter - size, shouldAnimate),
+                ];
+              } else if (face === 'R' || face === 'L') {
+                const x = (face === 'R' ? 1 : -1) * faceDistance;
+                const yCenter = pos.y * 0.667;
+                const zCenter = pos.z * 0.667;
+                stickerCorners = [
+                  this.project3D(x, yCenter + size, zCenter + size, shouldAnimate),
+                  this.project3D(x, yCenter - size, zCenter + size, shouldAnimate),
+                  this.project3D(x, yCenter - size, zCenter - size, shouldAnimate),
+                  this.project3D(x, yCenter + size, zCenter - size, shouldAnimate),
+                ];
+              } else {
+                const z = (face === 'F' ? -1 : 1) * faceDistance;
+                const xCenter = pos.x * 0.667;
+                const yCenter = pos.y * 0.667;
+                stickerCorners = [
+                  this.project3D(xCenter + size, yCenter + size, z, shouldAnimate),
+                  this.project3D(xCenter - size, yCenter + size, z, shouldAnimate),
+                  this.project3D(xCenter - size, yCenter - size, z, shouldAnimate),
+                  this.project3D(xCenter + size, yCenter - size, z, shouldAnimate),
+                ];
+              }
+
+              const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
+              stickers.push({ corners: stickerCorners, color, z: avgZ });
+            });
+          });
+
+          // Add corner stickers
+          this.cube.corners.forEach((corner, index) => {
+            const pos = cornerPositions[index];
+            const colors = corner.colors;
+            const ori = corner.orientation;
+
+            // Map each face to its color based on position
+            const cornerMappings = [
+              ['U', 'R', 'F'], // URF
+              ['U', 'F', 'L'], // UFL
+              ['U', 'L', 'B'], // ULB
+              ['U', 'B', 'R'], // UBR
+              ['D', 'F', 'R'], // DFR
+              ['D', 'L', 'F'], // DLF
+              ['D', 'B', 'L'], // DBL
+              ['D', 'R', 'B']  // DRB
+            ];
+
+            const faceColorMap = Object.fromEntries(
+              cornerMappings[index].map((face, i) => [face, colors[i]])
+            );
+
+            // Apply orientation
+            // Define proper rotation order for each corner position
+            const cornerRotationOrders = {
+              0: ['U', 'R', 'F'], // URF
+              1: ['U', 'F', 'L'], // UFL
+              2: ['U', 'L', 'B'], // ULB
+              3: ['U', 'B', 'R'], // UBR
+              4: ['D', 'F', 'R'], // DFR
+              5: ['D', 'L', 'F'], // DLF
+              6: ['D', 'B', 'L'], // DBL
+              7: ['D', 'R', 'B'], // DRB
+            };
+
+            const rotatedMap = {};
+            const rotationOrder = cornerRotationOrders[index];
+            rotationOrder.forEach((face, i) => {
+              rotatedMap[face] = faceColorMap[rotationOrder[(i + ori) % 3]];
+            });
+
+            // Draw stickers for each face this corner touches
+            const facesToDraw = [];
+            if (pos.y < 0) facesToDraw.push('U');
+            else facesToDraw.push('D');
+            if (pos.x > 0) facesToDraw.push('R');
+            else facesToDraw.push('L');
+            if (pos.z < 0) facesToDraw.push('F');
+            else facesToDraw.push('B');
+
+            facesToDraw.forEach(face => {
+              const color = rotatedMap[face];
+
+              let stickerCorners;
+              const size = 0.333;
+              const faceDistance = 1.01;
+              const shouldAnimate =
+                this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move);
+
+              if (face === 'U' || face === 'D') {
+                const y = (face === 'U' ? -1 : 1) * faceDistance;
+                const xSign = pos.x > 0 ? 1 : -1;
+                const zSign = pos.z > 0 ? 1 : -1;
+                const xCenter = xSign * 0.667;
+                const zCenter = zSign * 0.667;
+                stickerCorners = [
+                  this.project3D(xCenter + xSign * size, y, zCenter + zSign * size, shouldAnimate),
+                  this.project3D(xCenter - xSign * size, y, zCenter + zSign * size, shouldAnimate),
+                  this.project3D(xCenter - xSign * size, y, zCenter - zSign * size, shouldAnimate),
+                  this.project3D(xCenter + xSign * size, y, zCenter - zSign * size, shouldAnimate),
+                ];
+              } else if (face === 'R' || face === 'L') {
+                const x = (face === 'R' ? 1 : -1) * faceDistance;
+                const ySign = pos.y > 0 ? 1 : -1;
+                const zSign = pos.z > 0 ? 1 : -1;
+                const yCenter = ySign * 0.667;
+                const zCenter = zSign * 0.667;
+                stickerCorners = [
+                  this.project3D(x, yCenter + ySign * size, zCenter + zSign * size, shouldAnimate),
+                  this.project3D(x, yCenter - ySign * size, zCenter + zSign * size, shouldAnimate),
+                  this.project3D(x, yCenter - ySign * size, zCenter - zSign * size, shouldAnimate),
+                  this.project3D(x, yCenter + ySign * size, zCenter - zSign * size, shouldAnimate),
+                ];
+              } else {
+                const z = (face === 'F' ? -1 : 1) * faceDistance;
+                const xSign = pos.x > 0 ? 1 : -1;
+                const ySign = pos.y > 0 ? 1 : -1;
+                const xCenter = xSign * 0.667;
+                const yCenter = ySign * 0.667;
+                stickerCorners = [
+                  this.project3D(xCenter + xSign * size, yCenter + ySign * size, z, shouldAnimate),
+                  this.project3D(xCenter - xSign * size, yCenter + ySign * size, z, shouldAnimate),
+                  this.project3D(xCenter - xSign * size, yCenter - ySign * size, z, shouldAnimate),
+                  this.project3D(xCenter + xSign * size, yCenter - ySign * size, z, shouldAnimate),
+                ];
+              }
+
+              const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
+              stickers.push({ corners: stickerCorners, color, z: avgZ });
+            });
+          });
+
+          // Sort stickers by z-depth (back to front)
+          stickers.sort((a, b) => b.z - a.z);
+
+          // Draw all stickers
+          stickers.forEach(sticker => {
+            this.drawSticker(sticker.corners, sticker.color);
+          });
+        }
+      }
+
+      // Initialize
+      const cube = new RubiksCube();
+      const renderer = new CubeRenderer(document.getElementById('canvas'), cube);
+
+      // Scramble function
+      async function scrambleCube() {
+        const moves = ['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"];
+        const scrambleLength = 30 + Math.floor(Math.random() * 11);
+
+        for (let i = 0; i < scrambleLength; i++) {
+          const randomMove = moves[Math.floor(Math.random() * moves.length)];
+          await renderer.animateMove(randomMove);
+        }
+      }
+
+      // Reset function
+      function resetCube() {
+        cube.reset();
         renderer.render();
+      }
+
+      // Initial render
+      renderer.render();
     </script>
-</body>
+  </body>
 </html>
