@@ -68,18 +68,18 @@
 
     <div class="controls">
         <div class="face-buttons">
-            <button onclick="cube.move('U')">U</button>
-            <button onclick="cube.move('U\\'')">U'</button>
-            <button onclick="cube.move('D')">D</button>
-            <button onclick="cube.move('D\\'')">D'</button>
-            <button onclick="cube.move('R')">R</button>
-            <button onclick="cube.move('R\\'')">R'</button>
-            <button onclick="cube.move('L')">L</button>
-            <button onclick="cube.move('L\\'')">L'</button>
-            <button onclick="cube.move('F')">F</button>
-            <button onclick="cube.move('F\\'')">F'</button>
-            <button onclick="cube.move('B')">B</button>
-            <button onclick="cube.move('B\\'')">B'</button>
+            <button onclick="renderer.animateMove('U')">U</button>
+            <button onclick="renderer.animateMove('U\'')">U'</button>
+            <button onclick="renderer.animateMove('D')">D</button>
+            <button onclick="renderer.animateMove('D\'')">D'</button>
+            <button onclick="renderer.animateMove('R')">R</button>
+            <button onclick="renderer.animateMove('R\'')">R'</button>
+            <button onclick="renderer.animateMove('L')">L</button>
+            <button onclick="renderer.animateMove('L\'')">L'</button>
+            <button onclick="renderer.animateMove('F')">F</button>
+            <button onclick="renderer.animateMove('F\'')">F'</button>
+            <button onclick="renderer.animateMove('B')">B</button>
+            <button onclick="renderer.animateMove('B\'')">B'</button>
         </div>
     </div>
 
@@ -287,6 +287,13 @@
                 this.scale = 100;
 
                 this.setupInteraction();
+
+                this.animating = false;
+                this.animationQueue = [];
+                this.animationProgress = 0;
+                this.animationDuration = 300; // milliseconds
+                this.currentAnimation = null;
+
             }
 
             setupInteraction() {
@@ -319,7 +326,118 @@
                 });
             }
 
-            project3D(x, y, z) {
+            animateMove(move) {
+                return new Promise(resolve => {
+                    this.animationQueue.push({ move, resolve });
+                    if (!this.animating) {
+                        this.processAnimationQueue();
+                    }
+                });
+            }
+
+            processAnimationQueue() {
+                if (this.animationQueue.length === 0) {
+                    this.animating = false;
+                    return;
+                }
+
+                this.animating = true;
+                const { move, resolve } = this.animationQueue.shift();
+                this.currentAnimation = { move, resolve, startTime: Date.now() };
+
+                const animate = () => {
+                    const elapsed = Date.now() - this.currentAnimation.startTime;
+                    this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
+
+                    this.render();
+
+                    if (this.animationProgress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // Apply the actual move to the cube state
+                        this.cube.move(this.currentAnimation.move);
+                        this.animationProgress = 0;
+                        this.currentAnimation.resolve();
+                        this.currentAnimation = null;
+                        this.render();
+                        this.processAnimationQueue();
+                    }
+                };
+
+                animate();
+            }
+            getRotationMatrix(axis, angle) {
+                const c = Math.cos(angle);
+                const s = Math.sin(angle);
+
+                if (axis === 'y') {
+                    return {
+                        x: (x, y, z) => x * c - z * s,
+                        y: (x, y, z) => y,
+                        z: (x, y, z) => x * s + z * c
+                    };
+                } else if (axis === 'x') {
+                    return {
+                        x: (x, y, z) => x,
+                        y: (x, y, z) => y * c - z * s,
+                        z: (x, y, z) => y * s + z * c
+                    };
+                } else if (axis === 'z') {
+                    return {
+                        x: (x, y, z) => x * c - y * s,
+                        y: (x, y, z) => x * s + y * c,
+                        z: (x, y, z) => z
+                    };
+                }
+            }
+
+            // Add this method to determine which pieces are affected by a move:
+            isPieceAffectedByMove(pieceType, piecePos, move) {
+                const face = move.charAt(0);
+
+                if (pieceType === 'center') {
+                    return false; // Centers don't move
+                }
+
+                if (face === 'U') return piecePos.y < -0.5;
+                if (face === 'D') return piecePos.y > 0.5;
+                if (face === 'R') return piecePos.x > 0.5;
+                if (face === 'L') return piecePos.x < -0.5;
+                if (face === 'F') return piecePos.z < -0.5;
+                if (face === 'B') return piecePos.z > 0.5;
+
+                return false;
+            }
+
+
+            project3D(x, y, z, applyAnimation = true) {
+                // Apply animation rotation if active
+                if (applyAnimation && this.currentAnimation) {
+                    const move = this.currentAnimation.move;
+                    const face = move.charAt(0);
+                    const isPrime = move.includes('\'');
+
+                    let axis, angle;
+                    if (face === 'U' || face === 'D') {
+                        axis = 'y';
+                        angle = (face === 'U' ? -1 : 1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
+                    } else if (face === 'R' || face === 'L') {
+                        axis = 'x';
+                        angle = (face === 'R' ? 1 : -1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
+                    } else if (face === 'F' || face === 'B') {
+                        axis = 'z';
+                        angle = (face === 'F' ? 1 : -1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
+                    }
+
+                    const rotation = this.getRotationMatrix(axis, angle);
+                    const newX = rotation.x(x, y, z);
+                    const newY = rotation.y(x, y, z);
+                    const newZ = rotation.z(x, y, z);
+                    x = newX;
+                    y = newY;
+                    z = newZ;
+                }
+
                 // Apply rotations
                 const radX = this.rotationX * Math.PI / 180;
                 const radY = this.rotationY * Math.PI / 180;
@@ -339,6 +457,7 @@
 
                 return { x: projX, y: projY, z: z2 };
             }
+
 
             drawSticker(corners, color) {
                 this.ctx.beginPath();
@@ -422,26 +541,32 @@
 
                     const size = 0.333; // 1/3 of cube edge
                     const faceDistance = 1.01; // Slightly outside the cube center
+                    const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move);
+
                     const corners = [
                         this.project3D(
                             center.pos.x * faceDistance + tangent1.x * size + tangent2.x * size,
                             center.pos.y * faceDistance + tangent1.y * size + tangent2.y * size,
-                            center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size
+                            center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size,
+                            shouldAnimate
                         ),
                         this.project3D(
                             center.pos.x * faceDistance - tangent1.x * size + tangent2.x * size,
                             center.pos.y * faceDistance - tangent1.y * size + tangent2.y * size,
-                            center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size
+                            center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size,
+                            shouldAnimate
                         ),
                         this.project3D(
                             center.pos.x * faceDistance - tangent1.x * size - tangent2.x * size,
                             center.pos.y * faceDistance - tangent1.y * size - tangent2.y * size,
-                            center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size
+                            center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size,
+                            shouldAnimate
                         ),
                         this.project3D(
                             center.pos.x * faceDistance + tangent1.x * size - tangent2.x * size,
                             center.pos.y * faceDistance + tangent1.y * size - tangent2.y * size,
-                            center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size
+                            center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size,
+                            shouldAnimate
                         )
                     ];
 
@@ -479,38 +604,40 @@
                         }
                         const color = colors[colorIndex];
 
-                let stickerCorners;
+                        let stickerCorners;
                         const size = 0.333; // 1/3 of cube edge
                         const faceDistance = 1.01; // Slightly outside the cube center
+                        const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move);
+
                         if (face === 'U' || face === 'D') {
                             const y = (face === 'U' ? -1 : 1) * faceDistance;
                             const xCenter = pos.x * 0.667;
                             const zCenter = pos.z * 0.667;
                             stickerCorners = [
-                                this.project3D(xCenter + size, y, zCenter + size),
-                                this.project3D(xCenter - size, y, zCenter + size),
-                                this.project3D(xCenter - size, y, zCenter - size),
-                                this.project3D(xCenter + size, y, zCenter - size)
+                                this.project3D(xCenter + size, y, zCenter + size, shouldAnimate),
+                                this.project3D(xCenter - size, y, zCenter + size, shouldAnimate),
+                                this.project3D(xCenter - size, y, zCenter - size, shouldAnimate),
+                                this.project3D(xCenter + size, y, zCenter - size, shouldAnimate)
                             ];
                         } else if (face === 'R' || face === 'L') {
                             const x = (face === 'R' ? 1 : -1) * faceDistance;
                             const yCenter = pos.y * 0.667;
                             const zCenter = pos.z * 0.667;
                             stickerCorners = [
-                                this.project3D(x, yCenter + size, zCenter + size),
-                                this.project3D(x, yCenter - size, zCenter + size),
-                                this.project3D(x, yCenter - size, zCenter - size),
-                                this.project3D(x, yCenter + size, zCenter - size)
+                                this.project3D(x, yCenter + size, zCenter + size, shouldAnimate),
+                                this.project3D(x, yCenter - size, zCenter + size, shouldAnimate),
+                                this.project3D(x, yCenter - size, zCenter - size, shouldAnimate),
+                                this.project3D(x, yCenter + size, zCenter - size, shouldAnimate)
                             ];
                         } else {
                             const z = (face === 'F' ? -1 : 1) * faceDistance;
                             const xCenter = pos.x * 0.667;
                             const yCenter = pos.y * 0.667;
                             stickerCorners = [
-                                this.project3D(xCenter + size, yCenter + size, z),
-                                this.project3D(xCenter - size, yCenter + size, z),
-                                this.project3D(xCenter - size, yCenter - size, z),
-                                this.project3D(xCenter + size, yCenter - size, z)
+                                this.project3D(xCenter + size, yCenter + size, z, shouldAnimate),
+                                this.project3D(xCenter - size, yCenter + size, z, shouldAnimate),
+                                this.project3D(xCenter - size, yCenter - size, z, shouldAnimate),
+                                this.project3D(xCenter + size, yCenter - size, z, shouldAnimate)
                             ];
                         }
 
@@ -586,6 +713,7 @@
                         let stickerCorners;
                         const size = 0.333;
                         const faceDistance = 1.01;
+                        const shouldAnimate = this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move);
 
                         if (face === 'U' || face === 'D') {
                             const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -594,10 +722,10 @@
                             const xCenter = xSign * 0.667;
                             const zCenter = zSign * 0.667;
                             stickerCorners = [
-                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
-                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
-                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
-                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
+                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size, shouldAnimate),
+                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size, shouldAnimate),
+                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size, shouldAnimate),
+                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size, shouldAnimate)
                             ];
                         } else if (face === 'R' || face === 'L') {
                             const x = (face === 'R' ? 1 : -1) * faceDistance;
@@ -606,10 +734,10 @@
                             const yCenter = ySign * 0.667;
                             const zCenter = zSign * 0.667;
                             stickerCorners = [
-                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
-                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
-                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
-                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
+                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size, shouldAnimate),
+                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size, shouldAnimate),
+                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size, shouldAnimate),
+                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size, shouldAnimate)
                             ];
                         } else {
                             const z = (face === 'F' ? -1 : 1) * faceDistance;
@@ -618,10 +746,10 @@
                             const xCenter = xSign * 0.667;
                             const yCenter = ySign * 0.667;
                             stickerCorners = [
-                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
-                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
-                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
-                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
+                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z, shouldAnimate),
+                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z, shouldAnimate),
+                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z, shouldAnimate),
+                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z, shouldAnimate)
                             ];
                         }
 
@@ -647,15 +775,14 @@
         // Scramble function
         async function scrambleCube() {
             const moves = ['U', 'U\'', 'D', 'D\'', 'R', 'R\'', 'L', 'L\'', 'F', 'F\'', 'B', 'B\''];
-            const scrambleLength = 30 + Math.floor(Math.random() * 11); // 30-40 moves
+            const scrambleLength = 30 + Math.floor(Math.random() * 11);
 
             for (let i = 0; i < scrambleLength; i++) {
                 const randomMove = moves[Math.floor(Math.random() * moves.length)];
-                cube.move(randomMove);
-                renderer.render();
-                await new Promise(resolve => setTimeout(resolve, 50)); // Small delay for animation
+                await renderer.animateMove(randomMove);
             }
         }
+
 
         // Reset function
         function resetCube() {
