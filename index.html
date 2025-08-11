@@ -694,10 +694,22 @@
                     }
 
                     // Apply orientation
+                    // Define proper rotation order for each corner position
+                    const cornerRotationOrders = {
+                        0: ['U', 'R', 'F'], // URF
+                        1: ['U', 'F', 'L'], // UFL
+                        2: ['U', 'L', 'B'], // ULB
+                        3: ['U', 'B', 'R'], // UBR
+                        4: ['D', 'F', 'R'], // DFR
+                        5: ['D', 'L', 'F'], // DLF
+                        6: ['D', 'B', 'L'], // DBL
+                        7: ['D', 'R', 'B']  // DRB
+                    };
+
                     const rotatedMap = {};
-                    const faces = Object.keys(faceColorMap);
-                    faces.forEach((face, i) => {
-                        rotatedMap[face] = faceColorMap[faces[(i + ori) % 3]];
+                    const rotationOrder = cornerRotationOrders[corner.position];
+                    rotationOrder.forEach((face, i) => {
+                        rotatedMap[face] = faceColorMap[rotationOrder[(i + ori) % 3]];
                     });
 
                     // Draw stickers for each face this corner touches
