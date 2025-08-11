@@ -641,11 +641,10 @@
               7: ['D', 'R', 'B'], // DRB
             };
 
-            const rotatedMap = {};
             const rotationOrder = cornerRotationOrders[index];
-            rotationOrder.forEach((face, i) => {
-              rotatedMap[face] = faceColorMap[rotationOrder[(i + ori) % 3]];
-            });
+            const rotatedMap = Object.fromEntries(rotationOrder.map(
+              (face, i) => [face, faceColorMap[rotationOrder[(i + ori) % 3]]]
+            ));
 
             // Draw stickers for each face this corner touches
             const facesToDraw = [];
