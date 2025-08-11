@@ -108,6 +108,35 @@
         height: 30px;
         fill: white;
       }
+
+      .sequence-input {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      #move-sequence {
+        padding: 8px 12px;
+        font-size: 14px;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+        width: 400px;
+        font-family: 'Courier New', monospace;
+        background-color: white;
+        transition: border-color 0.3s;
+      }
+
+      #move-sequence:focus {
+        outline: none;
+        border-color: #4caf50;
+      }
+
+      .sequence-input button {
+        padding: 8px 16px;
+        font-size: 14px;
+      }
     </style>
   </head>
   <body>
@@ -131,6 +160,13 @@
             <button onclick="renderer.animateVisualMove('F\'')">F'</button>
             <button onclick="renderer.animateVisualMove('B')">B</button>
             <button onclick="renderer.animateVisualMove('B\'')">B'</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="sequence-input">
+            <input type="text" id="move-sequence" placeholder="Enter moves: R U R' U' R' F R2 U' R' U' R U R' F'" />
+            <button onclick="executeMoveSequence()">Execute</button>
           </div>
         </div>
 
@@ -1120,6 +1156,55 @@
         renderer.render();
       }
 
+      // Parse move sequence string into individual moves
+      function parseMoveSequence(sequence) {
+        // Remove all whitespace
+        const cleanSequence = sequence.replace(/\s/g, '');
+        const moves = [];
+
+        let i = 0;
+        while (i < cleanSequence.length) {
+          if (/[UDRLF B]/.test(cleanSequence[i])) {
+            let move = cleanSequence[i];
+            
+            // Check for prime or 2
+            if (i + 1 < cleanSequence.length) {
+              if (cleanSequence[i + 1] === "'") {
+                move += "'";
+                i++;
+              } else if (cleanSequence[i + 1] === "2") {
+                moves.push(move, move); // Add twice for double move
+                i++;
+                i++;
+                continue;
+              }
+            }
+            
+            moves.push(move);
+          }
+          i++;
+        }
+
+        return moves;
+      }
+
+      // Execute a sequence of moves
+      async function executeMoveSequence() {
+        const input = document.getElementById('move-sequence');
+        const sequence = input.value.trim();
+        
+        if (!sequence) return;
+
+        const moves = parseMoveSequence(sequence);
+        
+        // Execute each move in sequence using visual moves
+        for (const move of moves) {
+          if (['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"].includes(move)) {
+            await renderer.animateVisualMove(move);
+          }
+        }
+      }
+
       let isRotating = false;
       let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
       let rotationAnimationId = null;
@@ -1196,6 +1281,13 @@
       // Stop rotation when mouse is released anywhere on the page
       document.addEventListener('mouseup', () => {
         stopRotation();
+      });
+
+      // Add Enter key support for move sequence input
+      document.getElementById('move-sequence').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          executeMoveSequence();
+        }
       });
     </script>
   </body>
