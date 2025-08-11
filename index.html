@@ -15,6 +15,19 @@
         padding: 20px;
       }
 
+      .main-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+      }
+
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       #canvas {
         border: 1px solid #ccc;
         background-color: #000;
@@ -60,33 +73,86 @@
       .face-buttons button:hover {
         background-color: #0b7dda;
       }
+
+      .rotation-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .rotation-button {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #ff9800;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s;
+        user-select: none;
+      }
+
+      .rotation-button:hover {
+        background-color: #e68900;
+      }
+
+      .rotation-button:active {
+        background-color: #cc7a00;
+      }
+
+      .rotation-button svg {
+        width: 30px;
+        height: 30px;
+        fill: white;
+      }
     </style>
   </head>
   <body>
     <h1>Rubik's Cube Simulator</h1>
-    <canvas id="canvas" width="600" height="600"></canvas>
+    
+    <div class="main-container">
+      <div class="canvas-container">
+        <canvas id="canvas" width="600" height="600"></canvas>
 
-    <div class="controls">
-      <div class="face-buttons">
-        <button onclick="renderer.animateVisualMove('U')">U</button>
-        <button onclick="renderer.animateVisualMove('U\'')">U'</button>
-        <button onclick="renderer.animateVisualMove('D')">D</button>
-        <button onclick="renderer.animateVisualMove('D\'')">D'</button>
-        <button onclick="renderer.animateVisualMove('R')">R</button>
-        <button onclick="renderer.animateVisualMove('R\'')">R'</button>
-        <button onclick="renderer.animateVisualMove('L')">L</button>
-        <button onclick="renderer.animateVisualMove('L\'')">L'</button>
-        <button onclick="renderer.animateVisualMove('F')">F</button>
-        <button onclick="renderer.animateVisualMove('F\'')">F'</button>
-        <button onclick="renderer.animateVisualMove('B')">B</button>
-        <button onclick="renderer.animateVisualMove('B\'')">B'</button>
+        <div class="controls">
+          <div class="face-buttons">
+            <button onclick="renderer.animateVisualMove('U')">U</button>
+            <button onclick="renderer.animateVisualMove('U\'')">U'</button>
+            <button onclick="renderer.animateVisualMove('D')">D</button>
+            <button onclick="renderer.animateVisualMove('D\'')">D'</button>
+            <button onclick="renderer.animateVisualMove('R')">R</button>
+            <button onclick="renderer.animateVisualMove('R\'')">R'</button>
+            <button onclick="renderer.animateVisualMove('L')">L</button>
+            <button onclick="renderer.animateVisualMove('L\'')">L'</button>
+            <button onclick="renderer.animateVisualMove('F')">F</button>
+            <button onclick="renderer.animateVisualMove('F\'')">F'</button>
+            <button onclick="renderer.animateVisualMove('B')">B</button>
+            <button onclick="renderer.animateVisualMove('B\'')">B'</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button onclick="scrambleCube()">Scramble</button>
+          <button onclick="resetCube()">Reset</button>
+          <button onclick="resetOrientation()">Reset Orientation</button>
+        </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <button onclick="scrambleCube()">Scramble</button>
-      <button onclick="resetCube()">Reset</button>
-      <button onclick="resetOrientation()">Reset Orientation</button>
+      <div class="rotation-controls">
+        <button class="rotation-button" id="counterclockwise-btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 6V9l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z" fill="white"/>
+          </svg>
+        </button>
+        <button class="rotation-button" id="clockwise-btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 6V9l-4-4 4-4v3c4.42 0 8 3.58 8 8 0 1.57-.46 3.03-1.24 4.26L17.3 14.8c.45-.83.7-1.79.7-2.8 0-3.31-2.69-6-6-6z" fill="white"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <script>
@@ -993,8 +1059,84 @@
         renderer.render();
       }
 
+      // Z-axis rotation variables
+      let isRotating = false;
+      let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
+      let rotationAnimationId = null;
+
+      // Z-axis rotation functions
+      function rotateZ(direction) {
+        const rotationSpeed = 0.02; // Adjust speed as needed
+        const zRotation = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 0, 1], direction * rotationSpeed);
+        Math3D.quat_multiply(renderer.orientation, zRotation, renderer.orientation);
+        Math3D.quat_normalize(renderer.orientation, renderer.orientation);
+        renderer.render();
+      }
+
+      function startRotation(direction) {
+        if (isRotating) return;
+        isRotating = true;
+        rotationDirection = direction;
+        
+        function animate() {
+          if (isRotating) {
+            rotateZ(rotationDirection);
+            rotationAnimationId = requestAnimationFrame(animate);
+          }
+        }
+        animate();
+      }
+
+      function stopRotation() {
+        isRotating = false;
+        if (rotationAnimationId) {
+          cancelAnimationFrame(rotationAnimationId);
+          rotationAnimationId = null;
+        }
+      }
+
+
       // Initial render
       renderer.render();
+
+      // Setup rotation button event handlers
+      const clockwiseBtn = document.getElementById('clockwise-btn');
+      const counterclockwiseBtn = document.getElementById('counterclockwise-btn');
+
+      // Clockwise button events
+      clockwiseBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startRotation(-1);
+      });
+
+      clockwiseBtn.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        stopRotation();
+      });
+
+      clockwiseBtn.addEventListener('mouseleave', (e) => {
+        stopRotation();
+      });
+
+      // Counterclockwise button events  
+      counterclockwiseBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startRotation(1);
+      });
+
+      counterclockwiseBtn.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        stopRotation();
+      });
+
+      counterclockwiseBtn.addEventListener('mouseleave', (e) => {
+        stopRotation();
+      });
+
+      // Stop rotation when mouse is released anywhere on the page
+      document.addEventListener('mouseup', () => {
+        stopRotation();
+      });
     </script>
   </body>
 </html>
