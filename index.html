@@ -68,18 +68,18 @@
 
     <div class="controls">
       <div class="face-buttons">
-        <button onclick="renderer.animateMove('U')">U</button>
-        <button onclick="renderer.animateMove('U\'')">U'</button>
-        <button onclick="renderer.animateMove('D')">D</button>
-        <button onclick="renderer.animateMove('D\'')">D'</button>
-        <button onclick="renderer.animateMove('R')">R</button>
-        <button onclick="renderer.animateMove('R\'')">R'</button>
-        <button onclick="renderer.animateMove('L')">L</button>
-        <button onclick="renderer.animateMove('L\'')">L'</button>
-        <button onclick="renderer.animateMove('F')">F</button>
-        <button onclick="renderer.animateMove('F\'')">F'</button>
-        <button onclick="renderer.animateMove('B')">B</button>
-        <button onclick="renderer.animateMove('B\'')">B'</button>
+        <button onclick="renderer.animateVisualMove('U')">U</button>
+        <button onclick="renderer.animateVisualMove('U\'')">U'</button>
+        <button onclick="renderer.animateVisualMove('D')">D</button>
+        <button onclick="renderer.animateVisualMove('D\'')">D'</button>
+        <button onclick="renderer.animateVisualMove('R')">R</button>
+        <button onclick="renderer.animateVisualMove('R\'')">R'</button>
+        <button onclick="renderer.animateVisualMove('L')">L</button>
+        <button onclick="renderer.animateVisualMove('L\'')">L'</button>
+        <button onclick="renderer.animateVisualMove('F')">F</button>
+        <button onclick="renderer.animateVisualMove('F\'')">F'</button>
+        <button onclick="renderer.animateVisualMove('B')">B</button>
+        <button onclick="renderer.animateVisualMove('B\'')">B'</button>
       </div>
     </div>
 
@@ -292,6 +292,89 @@
           });
         }
 
+        // Map visual face positions to logical faces based on current rotation
+        getVisualToLogicalMapping() {
+          // Normalize rotation angles to 0-360 range
+          const normalizeAngle = (angle) => ((angle % 360) + 360) % 360;
+          const rotX = normalizeAngle(this.rotationX);
+          const rotY = normalizeAngle(this.rotationY);
+
+          // Determine which face is currently on top, front, right, etc.
+          // Based on rotation angles, calculate which logical face is in each visual position
+
+          // Start with identity mapping
+          let mapping = {
+            visualUp: 'U',     // Which logical face is visually on top
+            visualDown: 'D',   // Which logical face is visually on bottom
+            visualRight: 'R',  // Which logical face is visually on right
+            visualLeft: 'L',   // Which logical face is visually on left
+            visualFront: 'F',  // Which logical face is visually in front
+            visualBack: 'B'    // Which logical face is visually in back
+          };
+
+          // Apply Y rotation (horizontal rotation)
+          const ySteps = Math.round(rotY / 90) % 4;
+          for (let i = 0; i < Math.abs(ySteps); i++) {
+            if (ySteps > 0) {
+              // Clockwise Y rotation: F->R->B->L->F
+              const temp = mapping.visualFront;
+              mapping.visualFront = mapping.visualLeft;
+              mapping.visualLeft = mapping.visualBack;
+              mapping.visualBack = mapping.visualRight;
+              mapping.visualRight = temp;
+            } else {
+              // Counter-clockwise Y rotation: F->L->B->R->F
+              const temp = mapping.visualFront;
+              mapping.visualFront = mapping.visualRight;
+              mapping.visualRight = mapping.visualBack;
+              mapping.visualBack = mapping.visualLeft;
+              mapping.visualLeft = temp;
+            }
+          }
+
+          // Apply X rotation (vertical rotation)
+          const xSteps = Math.round(rotX / 90) % 4;
+          for (let i = 0; i < Math.abs(xSteps); i++) {
+            if (xSteps > 0) {
+              // Clockwise X rotation: U->F->D->B->U
+              const temp = mapping.visualUp;
+              mapping.visualUp = mapping.visualBack;
+              mapping.visualBack = mapping.visualDown;
+              mapping.visualDown = mapping.visualFront;
+              mapping.visualFront = temp;
+            } else {
+              // Counter-clockwise X rotation: U->B->D->F->U
+              const temp = mapping.visualUp;
+              mapping.visualUp = mapping.visualFront;
+              mapping.visualFront = mapping.visualDown;
+              mapping.visualDown = mapping.visualBack;
+              mapping.visualBack = temp;
+            }
+          }
+
+          return mapping;
+        }
+
+        // Convert visual move notation to logical move notation
+        visualMoveToLogical(visualMove) {
+          const mapping = this.getVisualToLogicalMapping();
+          const isPrime = visualMove.includes("'");
+          const baseFace = visualMove.charAt(0);
+
+          let logicalFace;
+          switch (baseFace) {
+            case 'U': logicalFace = mapping.visualUp; break;
+            case 'D': logicalFace = mapping.visualDown; break;
+            case 'R': logicalFace = mapping.visualRight; break;
+            case 'L': logicalFace = mapping.visualLeft; break;
+            case 'F': logicalFace = mapping.visualFront; break;
+            case 'B': logicalFace = mapping.visualBack; break;
+            default: throw new Error(`not a move: ${baseFace}`);
+          }
+
+          return logicalFace + (isPrime ? "'" : "");
+        }
+
         animateMove(move) {
           return new Promise(resolve => {
             this.animationQueue.push({ move, resolve });
@@ -299,6 +382,12 @@
               this.processAnimationQueue();
             }
           });
+        }
+
+        // Animate a move based on visual orientation
+        animateVisualMove(visualMove) {
+          const logicalMove = this.visualMoveToLogical(visualMove);
+          return this.animateMove(logicalMove);
         }
 
         processAnimationQueue() {
