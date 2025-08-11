@@ -426,7 +426,9 @@
                         angle = (face === 'R' ? 1 : -1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
                     } else if (face === 'F' || face === 'B') {
                         axis = 'z';
-                        angle = (face === 'F' ? 1 : -1) * (isPrime ? -1 : 1) * Math.PI / 2 * this.animationProgress;
+                        // When looking at the F face, clockwise is negative rotation around z
+                        // When looking at the B face from behind, clockwise is positive rotation around z
+                        angle = (face === 'B' ? -1 : 1) * (isPrime ? 1 : -1) * Math.PI / 2 * this.animationProgress;
                     }
 
                     const rotation = this.getRotationMatrix(axis, angle);
