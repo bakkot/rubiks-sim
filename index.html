@@ -154,22 +154,17 @@
                 }
             }
 
-            // Helper function to cycle pieces
+            // todo avoid clones etc
             cyclePieces(pieces, cycle, oriChange = 0) {
-                const temp = [];
-                for (let i = 0; i < cycle.length; i++) {
-                    temp[i] = {
-                        pos: pieces[cycle[i]].pos,
-                        ori: pieces[cycle[i]].ori
-                    };
-                }
-
+                let clone = [...pieces];
+                let relevantPieces = cycle.map(pos => pieces.findIndex(x => x.pos === pos));
+                let rotated = [...relevantPieces];
+                rotated.unshift(rotated.pop());
                 const isCorner = pieces === this.corners;
-                for (let i = 0; i < cycle.length; i++) {
-                    const nextIndex = (i + 1) % cycle.length;
-                    pieces[cycle[nextIndex]].pos = temp[i].pos;
-                    pieces[cycle[nextIndex]].ori = (temp[i].ori + oriChange) % (isCorner ? 3 : 2);
-                    if (isCorner) oriChange = 3 - oriChange;
+                for (let i = 0; i < relevantPieces.length; ++i) {
+                    pieces[relevantPieces[i]] = {...clone[rotated[i]]};
+                    const sign = (relevantPieces[i] - rotated[i]) % 2 === 0 ? -1 : 1;
+                    pieces[relevantPieces[i]].ori = ((isCorner ? 3 : 2) + pieces[relevantPieces[i]].ori + sign * oriChange) % (isCorner ? 3 : 2);
                 }
             }
 
@@ -235,6 +230,7 @@
             }
 
             // Get visual representation
+            // TODO refactor
             getVisualState() {
                 // Define color schemes for each piece
                 const cornerColors = [
