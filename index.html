@@ -421,26 +421,27 @@
                     };
 
                     const size = 0.333; // 1/3 of cube edge
+                    const faceDistance = 1.01; // Slightly outside the cube center
                     const corners = [
                         this.project3D(
-                            center.pos.x * 1.5 + tangent1.x * size + tangent2.x * size,
-                            center.pos.y * 1.5 + tangent1.y * size + tangent2.y * size,
-                            center.pos.z * 1.5 + tangent1.z * size + tangent2.z * size
+                            center.pos.x * faceDistance + tangent1.x * size + tangent2.x * size,
+                            center.pos.y * faceDistance + tangent1.y * size + tangent2.y * size,
+                            center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size
                         ),
                         this.project3D(
-                            center.pos.x * 1.5 - tangent1.x * size + tangent2.x * size,
-                            center.pos.y * 1.5 - tangent1.y * size + tangent2.y * size,
-                            center.pos.z * 1.5 - tangent1.z * size + tangent2.z * size
+                            center.pos.x * faceDistance - tangent1.x * size + tangent2.x * size,
+                            center.pos.y * faceDistance - tangent1.y * size + tangent2.y * size,
+                            center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size
                         ),
                         this.project3D(
-                            center.pos.x * 1.5 - tangent1.x * size - tangent2.x * size,
-                            center.pos.y * 1.5 - tangent1.y * size - tangent2.y * size,
-                            center.pos.z * 1.5 - tangent1.z * size - tangent2.z * size
+                            center.pos.x * faceDistance - tangent1.x * size - tangent2.x * size,
+                            center.pos.y * faceDistance - tangent1.y * size - tangent2.y * size,
+                            center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size
                         ),
                         this.project3D(
-                            center.pos.x * 1.5 + tangent1.x * size - tangent2.x * size,
-                            center.pos.y * 1.5 + tangent1.y * size - tangent2.y * size,
-                            center.pos.z * 1.5 + tangent1.z * size - tangent2.z * size
+                            center.pos.x * faceDistance + tangent1.x * size - tangent2.x * size,
+                            center.pos.y * faceDistance + tangent1.y * size - tangent2.y * size,
+                            center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size
                         )
                     ];
 
@@ -479,38 +480,39 @@
                         const color = colors[colorIndex];
 
                 let stickerCorners;
-                const size = 0.333; // 1/3 of cube edge
-                if (face === 'U' || face === 'D') {
-                    const y = face === 'U' ? -1.5 : 1.5;
-                    const xCenter = pos.x * 0.667; // Position between center and corner
-                    const zCenter = pos.z * 0.667;
-                    stickerCorners = [
-                        this.project3D(xCenter + size, y, zCenter + size),
-                        this.project3D(xCenter - size, y, zCenter + size),
-                        this.project3D(xCenter - size, y, zCenter - size),
-                        this.project3D(xCenter + size, y, zCenter - size)
-                    ];
-                } else if (face === 'R' || face === 'L') {
-                    const x = face === 'R' ? 1.5 : -1.5;
-                    const yCenter = pos.y * 0.667;
-                    const zCenter = pos.z * 0.667;
-                    stickerCorners = [
-                        this.project3D(x, yCenter + size, zCenter + size),
-                        this.project3D(x, yCenter - size, zCenter + size),
-                        this.project3D(x, yCenter - size, zCenter - size),
-                        this.project3D(x, yCenter + size, zCenter - size)
-                    ];
-                } else {
-                    const z = face === 'F' ? -1.5 : 1.5;
-                    const xCenter = pos.x * 0.667;
-                    const yCenter = pos.y * 0.667;
-                    stickerCorners = [
-                        this.project3D(xCenter + size, yCenter + size, z),
-                        this.project3D(xCenter - size, yCenter + size, z),
-                        this.project3D(xCenter - size, yCenter - size, z),
-                        this.project3D(xCenter + size, yCenter - size, z)
-                    ];
-                }
+                        const size = 0.333; // 1/3 of cube edge
+                        const faceDistance = 1.01; // Slightly outside the cube center
+                        if (face === 'U' || face === 'D') {
+                            const y = (face === 'U' ? -1 : 1) * faceDistance;
+                            const xCenter = pos.x * 0.667;
+                            const zCenter = pos.z * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + size, y, zCenter + size),
+                                this.project3D(xCenter - size, y, zCenter + size),
+                                this.project3D(xCenter - size, y, zCenter - size),
+                                this.project3D(xCenter + size, y, zCenter - size)
+                            ];
+                        } else if (face === 'R' || face === 'L') {
+                            const x = (face === 'R' ? 1 : -1) * faceDistance;
+                            const yCenter = pos.y * 0.667;
+                            const zCenter = pos.z * 0.667;
+                            stickerCorners = [
+                                this.project3D(x, yCenter + size, zCenter + size),
+                                this.project3D(x, yCenter - size, zCenter + size),
+                                this.project3D(x, yCenter - size, zCenter - size),
+                                this.project3D(x, yCenter + size, zCenter - size)
+                            ];
+                        } else {
+                            const z = (face === 'F' ? -1 : 1) * faceDistance;
+                            const xCenter = pos.x * 0.667;
+                            const yCenter = pos.y * 0.667;
+                            stickerCorners = [
+                                this.project3D(xCenter + size, yCenter + size, z),
+                                this.project3D(xCenter - size, yCenter + size, z),
+                                this.project3D(xCenter - size, yCenter - size, z),
+                                this.project3D(xCenter + size, yCenter - size, z)
+                            ];
+                        }
 
 
                         const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
@@ -535,46 +537,48 @@
                         const colorIndex = (i + ori) % 3;
                         const color = colors[colorIndex];
 
-                        let stickerCorners;
-                        const size = 0.333; // 1/3 of cube edge
+                    let stickerCorners;
+                    const size = 0.333; // 1/3 of cube edge
+                    const faceDistance = 1.01; // Slightly outside the cube center
 
-                        if (face === 'U' || face === 'D') {
-                            const y = face === 'U' ? -1.5 : 1.5;
-                            const xSign = pos.x > 0 ? 1 : -1;
-                            const zSign = pos.z > 0 ? 1 : -1;
-                            const xCenter = xSign * 0.667;
-                            const zCenter = zSign * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
-                                this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
-                                this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
-                                this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
-                            ];
-                        } else if (face === 'R' || face === 'L') {
-                            const x = face === 'R' ? 1.5 : -1.5;
-                            const ySign = pos.y > 0 ? 1 : -1;
-                            const zSign = pos.z > 0 ? 1 : -1;
-                            const yCenter = ySign * 0.667;
-                            const zCenter = zSign * 0.667;
-                            stickerCorners = [
-                                this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
-                                this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
-                                this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
-                                this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
-                            ];
-                        } else {
-                            const z = face === 'F' ? -1.5 : 1.5;
-                            const xSign = pos.x > 0 ? 1 : -1;
-                            const ySign = pos.y > 0 ? 1 : -1;
-                            const xCenter = xSign * 0.667;
-                            const yCenter = ySign * 0.667;
-                            stickerCorners = [
-                                this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
-                                this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
-                                this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
-                                this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
-                            ];
-                        }
+                    if (face === 'U' || face === 'D') {
+                        const y = (face === 'U' ? -1 : 1) * faceDistance;
+                        const xSign = pos.x > 0 ? 1 : -1;
+                        const zSign = pos.z > 0 ? 1 : -1;
+                        const xCenter = xSign * 0.667;
+                        const zCenter = zSign * 0.667;
+                        stickerCorners = [
+                            this.project3D(xCenter + xSign * size, y, zCenter + zSign * size),
+                            this.project3D(xCenter - xSign * size, y, zCenter + zSign * size),
+                            this.project3D(xCenter - xSign * size, y, zCenter - zSign * size),
+                            this.project3D(xCenter + xSign * size, y, zCenter - zSign * size)
+                        ];
+                    } else if (face === 'R' || face === 'L') {
+                        const x = (face === 'R' ? 1 : -1) * faceDistance;
+                        const ySign = pos.y > 0 ? 1 : -1;
+                        const zSign = pos.z > 0 ? 1 : -1;
+                        const yCenter = ySign * 0.667;
+                        const zCenter = zSign * 0.667;
+                        stickerCorners = [
+                            this.project3D(x, yCenter + ySign * size, zCenter + zSign * size),
+                            this.project3D(x, yCenter - ySign * size, zCenter + zSign * size),
+                            this.project3D(x, yCenter - ySign * size, zCenter - zSign * size),
+                            this.project3D(x, yCenter + ySign * size, zCenter - zSign * size)
+                        ];
+                    } else {
+                        const z = (face === 'F' ? -1 : 1) * faceDistance;
+                        const xSign = pos.x > 0 ? 1 : -1;
+                        const ySign = pos.y > 0 ? 1 : -1;
+                        const xCenter = xSign * 0.667;
+                        const yCenter = ySign * 0.667;
+                        stickerCorners = [
+                            this.project3D(xCenter + xSign * size, yCenter + ySign * size, z),
+                            this.project3D(xCenter - xSign * size, yCenter + ySign * size, z),
+                            this.project3D(xCenter - xSign * size, yCenter - ySign * size, z),
+                            this.project3D(xCenter + xSign * size, yCenter - ySign * size, z)
+                        ];
+                    }
+
 
                         const avgZ = stickerCorners.reduce((sum, c) => sum + c.z, 0) / 4;
                         stickers.push({ corners: stickerCorners, color, z: avgZ });
