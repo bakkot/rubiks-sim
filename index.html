@@ -86,6 +86,7 @@
     <div class="controls">
       <button onclick="scrambleCube()">Scramble</button>
       <button onclick="resetCube()">Reset</button>
+      <button onclick="resetOrientation()">Reset Orientation</button>
     </div>
 
     <script>
@@ -393,7 +394,7 @@
           this.canvas = canvas;
           this.ctx = canvas.getContext('2d');
           this.cube = cube;
-          this.orientation = Math3D.quat_create();
+          this.orientation = [0.1, 0.8, 0.1, 0.6];
           this.scale = 100;
 
           this.setupInteraction();
@@ -983,6 +984,12 @@
       // Reset function
       function resetCube() {
         cube.reset();
+        renderer.render();
+      }
+
+      // Reset orientation function
+      function resetOrientation() {
+        renderer.orientation = [0.1, 0.8, 0.1, 0.6];
         renderer.render();
       }
 
