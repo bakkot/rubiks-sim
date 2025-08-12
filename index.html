@@ -79,6 +79,19 @@
         background-color: #0b7dda;
       }
 
+      .reorientation-buttons button {
+        background-color: #9c27b0;
+      }
+
+      .reorientation-buttons button:hover {
+        background-color: #7b1fa2;
+      }
+
+      .reorientation-buttons {
+        display: flex;
+        gap: 5px;
+      }
+
       .rotation-controls {
         position: absolute;
         right: -90px;
@@ -233,6 +246,17 @@
             <button onclick="renderer.animateVisualMove('F\'')">F'</button>
             <button onclick="renderer.animateVisualMove('B')">B</button>
             <button onclick="renderer.animateVisualMove('B\'')">B'</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="reorientation-buttons">
+            <button onclick="renderer.animateVisualMove('x')">x</button>
+            <button onclick="renderer.animateVisualMove('x\'')">x'</button>
+            <button onclick="renderer.animateVisualMove('y')">y</button>
+            <button onclick="renderer.animateVisualMove('y\'')">y'</button>
+            <button onclick="renderer.animateVisualMove('z')">z</button>
+            <button onclick="renderer.animateVisualMove('z\'')">z'</button>
           </div>
         </div>
 
@@ -702,11 +726,112 @@
             case 'B':
               logicalFace = mapping.visualBack;
               break;
+            case 'x':
+            case 'y':
+            case 'z':
+              // Reorientation moves don't need logical conversion
+              return visualMove;
             default:
               throw new Error(`not a move: ${baseFace}`);
           }
 
           return logicalFace + (isPrime ? "'" : '');
+        }
+
+        // Reorientation moves - these update the cube's visual orientation
+        animateReorientationMove(move) {
+          return new Promise(resolve => {
+            const isPrime = move.includes("'");
+            const baseFace = move.charAt(0);
+            const mapping = this.getVisualToLogicalMapping();
+            
+            let axis;
+            let direction = isPrime ? -1 : 1;
+            
+            // Determine the rotation axis based on current orientation
+            switch (baseFace) {
+              case 'x':
+                // Rotate around R-L axis (current visual right to left)
+                const rFace = mapping.visualRight;
+                const lFace = mapping.visualLeft;
+                // Get the axis by finding the vector between R and L face normals
+                const rNormal = this.getFaceNormal(rFace);
+                const lNormal = this.getFaceNormal(lFace);
+                axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
+                break;
+              case 'y':
+                // Rotate around U-D axis (current visual up to down)
+                const uFace = mapping.visualUp;
+                const dFace = mapping.visualDown;
+                const uNormal = this.getFaceNormal(uFace);
+                const dNormal = this.getFaceNormal(dFace);
+                axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
+                break;
+              case 'z':
+                // Rotate around F-B axis (current visual front to back)
+                const fFace = mapping.visualFront;
+                const bFace = mapping.visualBack;
+                const fNormal = this.getFaceNormal(fFace);
+                const bNormal = this.getFaceNormal(bFace);
+                axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
+                break;
+            }
+            
+            // Normalize the axis
+            const axisLength = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+            axis[0] /= axisLength;
+            axis[1] /= axisLength;
+            axis[2] /= axisLength;
+            
+            // Create smooth rotation animation
+            const totalRotation = direction * Math.PI / 2; // 90 degrees
+            const duration = 600; // milliseconds
+            const startTime = Date.now();
+            const startOrientation = [...this.orientation];
+            
+            const animate = () => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              
+              // Use easing for smoother animation
+              const easeProgress = 0.5 * (1 - Math.cos(progress * Math.PI));
+              const currentAngle = totalRotation * easeProgress;
+              
+              // Create rotation quaternion for current progress
+              const rotationQuat = Math3D.quat_fromAxisAngle(Math3D.quat_create(), axis, currentAngle);
+              
+              // Apply rotation to starting orientation
+              Math3D.quat_multiply(this.orientation, rotationQuat, startOrientation);
+              Math3D.quat_normalize(this.orientation, this.orientation);
+              
+              this.render();
+              
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              } else {
+                resolve();
+              }
+            };
+            
+            animate();
+          });
+        }
+        
+        // Helper function to get face normal in world space
+        getFaceNormal(logicalFace) {
+          const faceNormals = {
+            U: [0, -1, 0],
+            D: [0, 1, 0], 
+            R: [1, 0, 0],
+            L: [-1, 0, 0],
+            F: [0, 0, -1],
+            B: [0, 0, 1]
+          };
+          
+          const normal = faceNormals[logicalFace];
+          const transformedNormal = [0, 0, 0];
+          Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
+          return transformedNormal;
         }
 
         animateMove(move) {
@@ -720,6 +845,14 @@
 
         // Animate a move based on visual orientation
         animateVisualMove(visualMove) {
+          const baseFace = visualMove.charAt(0);
+          
+          // Handle reorientation moves (x, y, z)
+          if (['x', 'y', 'z'].includes(baseFace)) {
+            return this.animateReorientationMove(visualMove);
+          }
+          
+          // Handle regular face moves
           const logicalMove = this.visualMoveToLogical(visualMove);
           return this.animateMove(logicalMove);
         }
@@ -1232,7 +1365,7 @@
         while (i < cleanSequence.length) {
           const char = cleanSequence[i];
           
-          if (/[UDRLF B]/.test(char)) {
+          if (/[UDRLFBxyz]/.test(char)) {
             let move = char;
             
             // Check for prime or 2
@@ -1283,15 +1416,13 @@
         // Check for invalid characters
         if (result.invalidChars.length > 0) {
           const invalidStr = result.invalidChars.map(c => `'${c}'`).join(', ');
-          showErrorModal(`Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, ', 2`);
+          showErrorModal(`Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, ', 2`);
           return;
         }
 
         // Execute each move in sequence using visual moves
         for (const move of result.moves) {
-          if (['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"].includes(move)) {
-            await renderer.animateVisualMove(move);
-          }
+          await renderer.animateVisualMove(move);
         }
       }
 
