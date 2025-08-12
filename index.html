@@ -388,11 +388,12 @@
 
       function resetCube() {
         cube.reset();
-        renderer.render(); // Will show checkmark since cube is now solved
+        renderer.resetOrientation();
+        renderer.render();
       }
 
       function resetOrientation() {
-        renderer.orientation = [0.1, 0.8, 0.1, 0.6];
+        renderer.orientation = [0.0991, 0.7921, 0.099, 0.5941];
         renderer.render();
       }
 
