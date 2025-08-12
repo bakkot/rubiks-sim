@@ -107,6 +107,21 @@
         background-color: #e64a19;
       }
 
+      .double-buttons {
+        display: flex;
+        gap: 5px;
+      }
+
+      .double-buttons button {
+        background-color: #795548;
+        font-size: 14px;
+        min-width: 50px;
+      }
+
+      .double-buttons button:hover {
+        background-color: #5d4037;
+      }
+
       .rotation-controls {
         position: absolute;
         right: -90px;
@@ -338,6 +353,23 @@
         </div>
 
         <div class="controls">
+          <div class="double-buttons">
+            <button onclick="renderer.animateMove('r')">r</button>
+            <button onclick="renderer.animateMove('r\'')">r'</button>
+            <button onclick="renderer.animateMove('l')">l</button>
+            <button onclick="renderer.animateMove('l\'')">l'</button>
+            <button onclick="renderer.animateMove('u')">u</button>
+            <button onclick="renderer.animateMove('u\'')">u'</button>
+            <button onclick="renderer.animateMove('d')">d</button>
+            <button onclick="renderer.animateMove('d\'')">d'</button>
+            <button onclick="renderer.animateMove('f')">f</button>
+            <button onclick="renderer.animateMove('f\'')">f'</button>
+            <button onclick="renderer.animateMove('b')">b</button>
+            <button onclick="renderer.animateMove('b\'')">b'</button>
+          </div>
+        </div>
+
+        <div class="controls">
           <div class="sequence-input">
             <input type="text" id="move-sequence" placeholder="Enter moves: R U R' U' R' F R2 U' R' U' R U R' F'" />
             <button id="execute-move-sequence">Execute</button>
@@ -447,7 +479,7 @@
         while (i < cleanSequence.length) {
           const char = cleanSequence[i];
 
-          if (/[UDRLFBxyzMES]/.test(char)) {
+          if (/[UDRLFBxyzMESrludfb]/.test(char)) {
             let move = char;
 
             // Check for prime or 2
@@ -495,7 +527,7 @@
         if (result.invalidChars.length > 0) {
           const invalidStr = result.invalidChars.map(c => `'${c}'`).join(', ');
           showErrorModal(
-            `Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, ', 2`,
+            `Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, M, E, S, r, l, u, d, f, b, ', 2`,
           );
           return;
         }

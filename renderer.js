@@ -177,8 +177,8 @@ export class CubeRenderer {
       'l': isPrime ? "x'" : 'x',
       'u': isPrime ? 'y' : "y'", 
       'd': isPrime ? "y'" : 'y',
-      'f': isPrime ? "z'" : 'z',
-      'b': isPrime ? 'z' : "z'"
+      'f': isPrime ? "z" : "z'",
+      'b': isPrime ? "z'" : 'z'
     };
     
     return doubleToReorientationMap[baseFace];
@@ -329,9 +329,8 @@ export class CubeRenderer {
         } else if (this.currentAnimation.kind === 'double') {
           // Apply the single face move for double moves
           const doubleMove = this.currentAnimation.move;
-          const faceMove = this.getDoubleFaceMove(doubleMove);
-          const logicalFaceMove = this.visualMoveToLogical(faceMove, orientation);
-          this.cube.move(logicalFaceMove);
+          const faceMove = this.doubleToFaceMove(doubleMove);
+          this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
           // Apply single face moves (reorientation moves don't change cube state)
           this.cube.move(this.currentAnimation.move);
