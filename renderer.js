@@ -142,6 +142,11 @@ export class CubeRenderer {
     return kind;
   }
 
+  // Check if a move kind includes reorientation (reorientation or slice)
+  includesReorientation(kind) {
+    return kind === 'reorientation' || kind === 'slice';
+  }
+
   // Get the reorientation move for slice moves
   getSliceReorientationMove(sliceMove) {
     const sliceToReorientationMap = {
@@ -231,7 +236,7 @@ export class CubeRenderer {
 
     // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
-    if (kind === 'reorientation' || kind === 'slice') {
+    if (this.includesReorientation(kind)) {
       const moveToUse = reorientationMove || move; // Use reorientationMove for slice moves
       reorientationData = this.setupReorientationAnimation(moveToUse, orientation);
     }
@@ -242,7 +247,7 @@ export class CubeRenderer {
       this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
       // Handle reorientation animation
-      if (this.currentAnimation.kind === 'reorientation' || this.currentAnimation.kind === 'slice') {
+      if (this.includesReorientation(this.currentAnimation.kind)) {
         this.updateReorientationAnimation(reorientationData, this.animationProgress);
       }
 
@@ -264,7 +269,7 @@ export class CubeRenderer {
         }
         
         // If this was a reorientation move, update stored orientations in remaining queue entries
-        if (this.currentAnimation.kind === 'reorientation' || this.currentAnimation.kind === 'slice') {
+        if (this.includesReorientation(this.currentAnimation.kind)) {
           this.updateQueueOrientations();
         }
         
