@@ -814,8 +814,7 @@
           }
           
           // Handle regular face moves
-          const logicalMove = this.visualMoveToLogical(visualMove);
-          return this.animateMove(logicalMove);
+          return this.animateMove(visualMove);
         }
 
         // Animate slice moves (M, E, S)
@@ -862,7 +861,13 @@
 
           this.animating = true;
           const { move, resolve, isSliceMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
-          this.currentAnimation = { move, resolve, startTime: Date.now(), isSliceMove, isReorientationMove };
+          
+          let processedMove = move;
+          if (!isSliceMove && !isReorientationMove) {
+            processedMove = this.visualMoveToLogical(move);
+          }
+          
+          this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), isSliceMove, isReorientationMove };
 
           // For reorientation moves, set up the rotation data
           let reorientationData = null;
