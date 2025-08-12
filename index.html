@@ -488,8 +488,12 @@
                 move += "'";
                 i++;
               } else if (cleanSequence[i + 1] === '2') {
-                moves.push(move, move);
                 i += 2;
+                if (cleanSequence[i] === "'") {
+                  move += "'";
+                  i++;
+                }
+                moves.push(move, move);
                 continue;
               }
             }
