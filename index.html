@@ -222,26 +222,35 @@
   </head>
   <body>
     <h1>Rubik's Cube Simulator</h1>
-    
+
     <div class="main-container">
       <div class="canvas-container">
         <div class="canvas-with-rotation">
           <canvas id="canvas" width="600" height="600"></canvas>
-          
+
           <div class="rotation-controls">
             <button class="rotation-button" id="counterclockwise-btn" title="Hold to rotate cube counterclockwise">
               <svg viewBox="0 0 24 24">
-                <path d="M12 6V9l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z" fill="white"/>
+                <path
+                  d="M12 6V9l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z"
+                  fill="white"
+                />
               </svg>
             </button>
             <button class="rotation-button" id="clockwise-btn" title="Hold to rotate cube clockwise">
               <svg viewBox="0 0 24 24">
-                <path d="M12 6V9l-4-4 4-4v3c4.42 0 8 3.58 8 8 0 1.57-.46 3.03-1.24 4.26L17.3 14.8c.45-.83.7-1.79.7-2.8 0-3.31-2.69-6-6-6z" fill="white"/>
+                <path
+                  d="M12 6V9l-4-4 4-4v3c4.42 0 8 3.58 8 8 0 1.57-.46 3.03-1.24 4.26L17.3 14.8c.45-.83.7-1.79.7-2.8 0-3.31-2.69-6-6-6z"
+                  fill="white"
+                />
               </svg>
             </button>
             <button class="rotation-button" id="reset-orientation-btn" title="Reset cube orientation to default view">
               <svg viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="white"/>
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                  fill="white"
+                />
               </svg>
             </button>
           </div>
@@ -320,12 +329,12 @@
         const moves = ['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"];
         const scrambleLength = 30 + Math.floor(Math.random() * 11);
 
-        const getBaseFace = (move) => move.replace("'", "");
+        const getBaseFace = move => move.replace("'", '');
 
-        const getInverse = (move) => move.includes("'") ? move.replace("'", "") : move + "'";
+        const getInverse = move => (move.includes("'") ? move.replace("'", '') : move + "'");
 
         const areOppositeFaces = (face1, face2) => {
-          const opposites = { 'U': 'D', 'D': 'U', 'R': 'L', 'L': 'R', 'F': 'B', 'B': 'F' };
+          const opposites = { U: 'D', D: 'U', R: 'L', L: 'R', F: 'B', B: 'F' };
           return opposites[face1] === face2;
         };
 
@@ -395,22 +404,22 @@
         let i = 0;
         while (i < cleanSequence.length) {
           const char = cleanSequence[i];
-          
+
           if (/[UDRLFBxyzMES]/.test(char)) {
             let move = char;
-            
+
             // Check for prime or 2
             if (i + 1 < cleanSequence.length) {
               if (cleanSequence[i + 1] === "'") {
                 move += "'";
                 i++;
-              } else if (cleanSequence[i + 1] === "2") {
+              } else if (cleanSequence[i + 1] === '2') {
                 moves.push(move, move);
                 i += 2;
                 continue;
               }
             }
-            
+
             moves.push(move);
           } else if (!invalidChars.includes(char)) {
             invalidChars.push(char);
@@ -436,14 +445,16 @@
       function executeMoveSequence() {
         const input = document.getElementById('move-sequence');
         const sequence = input.value.trim();
-        
+
         if (!sequence) return;
 
         const result = parseMoveSequence(sequence);
-        
+
         if (result.invalidChars.length > 0) {
           const invalidStr = result.invalidChars.map(c => `'${c}'`).join(', ');
-          showErrorModal(`Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, ', 2`);
+          showErrorModal(
+            `Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, ', 2`,
+          );
           return;
         }
 
@@ -493,7 +504,6 @@
         isDragging = false;
       });
 
-
       let isRotatingZ = false;
       let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
 
@@ -509,7 +519,7 @@
         if (isRotatingZ) return;
         isRotatingZ = true;
         rotationDirection = direction;
-        
+
         function animate() {
           if (isRotatingZ) {
             rotateZ(rotationDirection);
@@ -526,31 +536,31 @@
       const clockwiseBtn = document.getElementById('clockwise-btn');
       const counterclockwiseBtn = document.getElementById('counterclockwise-btn');
 
-      clockwiseBtn.addEventListener('mousedown', (e) => {
+      clockwiseBtn.addEventListener('mousedown', e => {
         e.preventDefault();
         startZRotation(-1);
       });
 
-      clockwiseBtn.addEventListener('mouseup', (e) => {
+      clockwiseBtn.addEventListener('mouseup', e => {
         e.preventDefault();
         stopZRotation();
       });
 
-      clockwiseBtn.addEventListener('mouseleave', (e) => {
+      clockwiseBtn.addEventListener('mouseleave', e => {
         stopZRotation();
       });
 
-      counterclockwiseBtn.addEventListener('mousedown', (e) => {
+      counterclockwiseBtn.addEventListener('mousedown', e => {
         e.preventDefault();
         startZRotation(1);
       });
 
-      counterclockwiseBtn.addEventListener('mouseup', (e) => {
+      counterclockwiseBtn.addEventListener('mouseup', e => {
         e.preventDefault();
         stopZRotation();
       });
 
-      counterclockwiseBtn.addEventListener('mouseleave', (e) => {
+      counterclockwiseBtn.addEventListener('mouseleave', e => {
         stopZRotation();
       });
 
@@ -564,7 +574,7 @@
 
       document.getElementById('reset').addEventListener('click', resetCube);
 
-      document.getElementById('move-sequence').addEventListener('keypress', (e) => {
+      document.getElementById('move-sequence').addEventListener('keypress', e => {
         if (e.key === 'Enter') {
           executeMoveSequence();
         }

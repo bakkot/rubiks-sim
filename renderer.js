@@ -5,7 +5,7 @@ export class CubeRenderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.cube = cube;
-    this.orientation = [0.0991, 0.7921, 0.0990, 0.5941];
+    this.orientation = [0.0991, 0.7921, 0.099, 0.5941];
     this.scale = 100;
 
     this.animating = false;
@@ -36,31 +36,33 @@ export class CubeRenderer {
     };
 
     // For each visual direction, find which logical face is closest to it
-    return Object.fromEntries(Object.entries(visualDirections).map(([visualPos, visualDir]) => {
-      let bestMatch = null;
-      let bestDot = -2; // Start with impossible dot product value
+    return Object.fromEntries(
+      Object.entries(visualDirections).map(([visualPos, visualDir]) => {
+        let bestMatch = null;
+        let bestDot = -2; // Start with impossible dot product value
 
-      // Check each logical face
-      Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
-        // Transform the logical face normal by the current orientation
-        const transformedNormal = [0, 0, 0];
-        Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
+        // Check each logical face
+        Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
+          // Transform the logical face normal by the current orientation
+          const transformedNormal = [0, 0, 0];
+          Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
 
-        // Calculate dot product to find how aligned they are
-        const dot =
-          transformedNormal[0] * visualDir[0] +
-          transformedNormal[1] * visualDir[1] +
-          transformedNormal[2] * visualDir[2];
+          // Calculate dot product to find how aligned they are
+          const dot =
+            transformedNormal[0] * visualDir[0] +
+            transformedNormal[1] * visualDir[1] +
+            transformedNormal[2] * visualDir[2];
 
-        // Keep track of the best match
-        if (dot > bestDot) {
-          bestDot = dot;
-          bestMatch = logicalFace;
-        }
-      });
+          // Keep track of the best match
+          if (dot > bestDot) {
+            bestDot = dot;
+            bestMatch = logicalFace;
+          }
+        });
 
-      return [visualPos, bestMatch];
-    }));
+        return [visualPos, bestMatch];
+      }),
+    );
   }
 
   // Convert visual move notation to logical move notation
@@ -99,28 +101,28 @@ export class CubeRenderer {
   // Reorientation moves - these update the cube's visual orientation
   animateReorientationMove(move) {
     return new Promise(resolve => {
-      this.animationQueue.push({ 
-        move, 
+      this.animationQueue.push({
+        move,
         resolve,
-        isReorientationMove: true 
+        isReorientationMove: true,
       });
       if (!this.animating) {
         this.processAnimationQueue();
       }
     });
   }
-  
+
   // Helper function to get face normal in world space
   getFaceNormal(logicalFace) {
     const faceNormals = {
       U: [0, -1, 0],
-      D: [0, 1, 0], 
+      D: [0, 1, 0],
       R: [1, 0, 0],
       L: [-1, 0, 0],
       F: [0, 0, -1],
-      B: [0, 0, 1]
+      B: [0, 0, 1],
     };
-    
+
     const normal = faceNormals[logicalFace];
     const transformedNormal = [0, 0, 0];
     Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
@@ -139,17 +141,17 @@ export class CubeRenderer {
   // Animate a move based on visual orientation
   animateVisualMove(visualMove) {
     const baseFace = visualMove.charAt(0);
-    
+
     // Handle reorientation moves (x, y, z)
     if (['x', 'y', 'z'].includes(baseFace)) {
       return this.animateReorientationMove(visualMove);
     }
-    
+
     // Handle slice moves (M, E, S)
     if (['M', 'E', 'S'].includes(baseFace)) {
       return this.animateSliceMove(visualMove);
     }
-    
+
     // Handle regular face moves
     return this.animateMove(visualMove);
   }
@@ -163,7 +165,7 @@ export class CubeRenderer {
 
     // Determine corresponding reorientation move
     if (move === 'M') {
-      reorientationMove = "x";
+      reorientationMove = 'x';
     } else if (move === "M'") {
       reorientationMove = "x'";
     } else if (move === 'E') {
@@ -175,9 +177,9 @@ export class CubeRenderer {
     } else if (move === "S'") {
       reorientationMove = 'z';
     }
-    
+
     return new Promise(resolve => {
-      this.animationQueue.push({ 
+      this.animationQueue.push({
         move,
         resolve,
         isSliceMove: true,
@@ -199,12 +201,12 @@ export class CubeRenderer {
 
     this.animating = true;
     const { move, resolve, isSliceMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
-    
+
     let processedMove = move;
     if (!isSliceMove && !isReorientationMove) {
       processedMove = this.visualMoveToLogical(move);
     }
-    
+
     this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), isSliceMove, isReorientationMove };
 
     // For reorientation moves, set up the rotation data
@@ -255,34 +257,31 @@ export class CubeRenderer {
   sliceToFaceMoves(sliceMove) {
     // Convert slice moves to visual dual face moves
     const sliceToFaceMap = {
-      'M': ['R', "L'"],    // M = R+L'
-      "M'": ["R'", 'L'],     // M' = R'+L
-      'E': ['U', "D'"],    // E = U+D'
-      "E'": ["U'", 'D'],     // E' = U'+D
-      'S': ["F'", 'B'],     // S = F'+B
-      "S'": ['F', "B'"],     // S' = F+B'
+      M: ['R', "L'"], // M = R+L'
+      "M'": ["R'", 'L'], // M' = R'+L
+      E: ['U', "D'"], // E = U+D'
+      "E'": ["U'", 'D'], // E' = U'+D
+      S: ["F'", 'B'], // S = F'+B
+      "S'": ['F', "B'"], // S' = F+B'
     };
-    
+
     const moves = sliceToFaceMap[sliceMove];
     if (!moves) {
       throw new Error(`Unknown slice move: ${sliceMove}`);
     }
-    
+
     // Convert to logical moves based on current orientation
-    return [
-      this.visualMoveToLogical(moves[0]),
-      this.visualMoveToLogical(moves[1])
-    ];
+    return [this.visualMoveToLogical(moves[0]), this.visualMoveToLogical(moves[1])];
   }
 
   setupReorientationAnimation(move) {
     const isPrime = move.includes("'");
     const baseFace = move.charAt(0);
     const mapping = this.getVisualToLogicalMapping();
-    
+
     let axis;
     let direction = isPrime ? -1 : 1;
-    
+
     // Determine the rotation axis based on current orientation
     switch (baseFace) {
       case 'x':
@@ -311,29 +310,29 @@ export class CubeRenderer {
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
     }
-    
+
     // Normalize the axis
     const axisLength = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
     axis[0] /= axisLength;
     axis[1] /= axisLength;
     axis[2] /= axisLength;
-    
+
     // Return reorientation animation data
     return {
       axis,
-      totalRotation: direction * Math.PI / 2, // 90 degrees
-      startOrientation: [...this.orientation]
+      totalRotation: (direction * Math.PI) / 2, // 90 degrees
+      startOrientation: [...this.orientation],
     };
   }
 
   updateReorientationAnimation(reorientationData, animationProgress) {
     const { axis, totalRotation, startOrientation } = reorientationData;
-    
+
     const currentAngle = totalRotation * animationProgress;
-    
+
     // Create rotation quaternion for current progress
     const rotationQuat = Math3D.quat_fromAxisAngle(Math3D.quat_create(), axis, currentAngle);
-    
+
     // Apply rotation to starting orientation
     Math3D.quat_multiply(this.orientation, rotationQuat, startOrientation);
     Math3D.quat_normalize(this.orientation, this.orientation);
@@ -402,8 +401,10 @@ export class CubeRenderer {
   isPieceAffectedByMove(pieceType, piecePos, move) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = this.sliceToFaceMoves(move);
-      return this.isPieceAffectedBySingleMove(piecePos, faceMoves[0]) || 
-             this.isPieceAffectedBySingleMove(piecePos, faceMoves[1]);
+      return (
+        this.isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
+        this.isPieceAffectedBySingleMove(piecePos, faceMoves[1])
+      );
     }
 
     return this.isPieceAffectedBySingleMove(piecePos, move);
@@ -425,7 +426,7 @@ export class CubeRenderer {
   project3D(x, y, z, applyAnimation, piecePosition) {
     if (applyAnimation && this.currentAnimation) {
       const move = this.currentAnimation.move;
-      
+
       const rotation = this.getAnimationRotation(move, piecePosition);
       if (rotation) {
         const newX = rotation.x(x, y, z);
@@ -541,28 +542,28 @@ export class CubeRenderer {
           center.pos.y * faceDistance + tangent1.y * size + tangent2.y * size,
           center.pos.z * faceDistance + tangent1.z * size + tangent2.z * size,
           shouldAnimate,
-          center.pos
+          center.pos,
         ),
         this.project3D(
           center.pos.x * faceDistance - tangent1.x * size + tangent2.x * size,
           center.pos.y * faceDistance - tangent1.y * size + tangent2.y * size,
           center.pos.z * faceDistance - tangent1.z * size + tangent2.z * size,
           shouldAnimate,
-          center.pos
+          center.pos,
         ),
         this.project3D(
           center.pos.x * faceDistance - tangent1.x * size - tangent2.x * size,
           center.pos.y * faceDistance - tangent1.y * size - tangent2.y * size,
           center.pos.z * faceDistance - tangent1.z * size - tangent2.z * size,
           shouldAnimate,
-          center.pos
+          center.pos,
         ),
         this.project3D(
           center.pos.x * faceDistance + tangent1.x * size - tangent2.x * size,
           center.pos.y * faceDistance + tangent1.y * size - tangent2.y * size,
           center.pos.z * faceDistance + tangent1.z * size - tangent2.z * size,
           shouldAnimate,
-          center.pos
+          center.pos,
         ),
       ];
 
@@ -762,7 +763,7 @@ export class CubeRenderer {
     this.ctx.lineWidth = 3;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
-    
+
     this.ctx.beginPath();
     this.ctx.moveTo(x + size * 0.25, y + size * 0.5);
     this.ctx.lineTo(x + size * 0.45, y + size * 0.7);

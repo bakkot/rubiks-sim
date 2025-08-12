@@ -70,14 +70,14 @@ export class RubiksCube {
         return false;
       }
     }
-    
+
     for (let i = 0; i < this.edges.length; i++) {
       const edge = this.edges[i];
       if (edge.id !== i || edge.orientation !== 0) {
         return false;
       }
     }
-    
+
     return true;
   }
 
