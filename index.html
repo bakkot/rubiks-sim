@@ -832,11 +832,29 @@
           const logicalMove1 = this.visualMoveToLogical(move1);
           const logicalMove2 = this.visualMoveToLogical(move2);
           
+          // Check if this should also include a reorientation move
+          let reorientationMove = null;
+          if ((move1 === 'R' && move2 === "L'") || (move1 === 'L' && move2 === "R'")) {
+            reorientationMove = 'x';
+          } else if ((move1 === "R'" && move2 === 'L') || (move1 === "L'" && move2 === 'R')) {
+            reorientationMove = "x'";
+          } else if ((move1 === 'U' && move2 === "D'") || (move1 === 'D' && move2 === "U'")) {
+            reorientationMove = 'y';
+          } else if ((move1 === "U'" && move2 === 'D') || (move1 === "D'" && move2 === 'U')) {
+            reorientationMove = "y'";
+          } else if ((move1 === 'F' && move2 === "B'") || (move1 === 'B' && move2 === "F'")) {
+            reorientationMove = 'z';
+          } else if ((move1 === "F'" && move2 === 'B') || (move1 === "B'" && move2 === 'F')) {
+            reorientationMove = "z'";
+          }
+          
           return new Promise(resolve => {
             this.animationQueue.push({ 
               move: `${logicalMove1}+${logicalMove2}`, 
               resolve,
-              isDualMove: true 
+              isDualMove: true,
+              isReorientationMove: reorientationMove !== null,
+              reorientationMove: reorientationMove
             });
             if (!this.animating) {
               this.processAnimationQueue();
@@ -851,13 +869,14 @@
           }
 
           this.animating = true;
-          const { move, resolve, isDualMove, isReorientationMove } = this.animationQueue.shift();
+          const { move, resolve, isDualMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
           this.currentAnimation = { move, resolve, startTime: Date.now(), isDualMove, isReorientationMove };
 
           // For reorientation moves, set up the rotation data
           let reorientationData = null;
           if (isReorientationMove) {
-            reorientationData = this.setupReorientationAnimation(move);
+            const moveToUse = reorientationMove || move; // Use reorientationMove if it's a combined move
+            reorientationData = this.setupReorientationAnimation(moveToUse);
           }
 
           const animate = () => {
@@ -875,16 +894,17 @@
               requestAnimationFrame(animate);
             } else {
               // Apply the actual move(s) to the cube state
-              if (this.currentAnimation.isReorientationMove) {
-                // Reorientation moves don't change cube state, only visual orientation
-                // Final orientation is already set by updateReorientationAnimation
-              } else if (this.currentAnimation.isDualMove) {
+              if (this.currentAnimation.isDualMove) {
+                // Apply the face moves to the cube
                 const [move1, move2] = this.currentAnimation.move.split('+');
                 this.cube.move(move1);
                 this.cube.move(move2);
-              } else {
+              } else if (!this.currentAnimation.isReorientationMove) {
+                // Apply single face moves (reorientation moves don't change cube state)
                 this.cube.move(this.currentAnimation.move);
               }
+              // Note: Reorientation moves don't change cube state, only visual orientation
+              // Final orientation is already set by updateReorientationAnimation
               this.animationProgress = 0;
               this.currentAnimation.resolve();
               this.currentAnimation = null;
@@ -950,9 +970,7 @@
         updateReorientationAnimation(reorientationData, animationProgress) {
           const { axis, totalRotation, startOrientation } = reorientationData;
           
-          // Use easing for smoother animation
-          const easeProgress = 0.5 * (1 - Math.cos(animationProgress * Math.PI));
-          const currentAngle = totalRotation * easeProgress;
+          const currentAngle = totalRotation * animationProgress;
           
           // Create rotation quaternion for current progress
           const rotationQuat = Math3D.quat_fromAxisAngle(Math3D.quat_create(), axis, currentAngle);
