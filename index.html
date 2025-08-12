@@ -354,7 +354,7 @@
     <dialog id="error-dialog" class="error-dialog">
       <h3>Invalid Move Sequence</h3>
       <p id="error-message"></p>
-      <button onclick="hideErrorModal()">OK</button>
+      <button id="hide-error-modal">OK</button>
     </dialog>
 
     <script type="module">
@@ -615,6 +615,8 @@
       });
 
       document.getElementById('execute-move-sequence').addEventListener('click', executeMoveSequence);
+
+      document.getElementById('hide-error-modal').addEventListener('click', hideErrorModal);
 
       document.querySelectorAll('input[name="animation-speed"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
