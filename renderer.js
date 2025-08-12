@@ -6,7 +6,7 @@ export class CubeRenderer {
     this.ctx = canvas.getContext('2d');
     this.cube = cube;
     this.scale = 100;
-    this.animationDuration = 600; // milliseconds
+    this.animationDuration = 300; // milliseconds
     this.reset();
   }
 

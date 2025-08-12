@@ -280,7 +280,11 @@
               Fast
             </label>
             <label>
-              <input type="radio" name="animation-speed" value="slow" checked>
+              <input type="radio" name="animation-speed" value="med" checked>
+              Med
+            </label>
+            <label>
+              <input type="radio" name="animation-speed" value="slow">
               Slow
             </label>
           </div>
@@ -658,6 +662,8 @@
         radio.addEventListener('change', (e) => {
           if (e.target.value === 'fast') {
             renderer.animationDuration = 100;
+          } else if (e.target.value === 'med') {
+            renderer.animationDuration = 300;
           } else if (e.target.value === 'slow') {
             renderer.animationDuration = 600;
           }
