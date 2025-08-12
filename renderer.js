@@ -1,4 +1,4 @@
-import { Math3D } from './3d-math.js';
+import { vec3_transformQuat, quat_fromAxisAngle, quat_multiply, quat_normalize } from './3d-math.js';
 
 export class CubeRenderer {
   constructor(canvas, cube) {
@@ -49,7 +49,7 @@ export class CubeRenderer {
         Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
           // Transform the logical face normal by the current orientation
           const transformedNormal = [0, 0, 0];
-          Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
+          vec3_transformQuat(transformedNormal, normal, this.orientation);
 
           // Calculate dot product to find how aligned they are
           const dot =
@@ -115,7 +115,7 @@ export class CubeRenderer {
 
     const normal = faceNormals[logicalFace];
     const transformedNormal = [0, 0, 0];
-    Math3D.vec3_transformQuat(transformedNormal, normal, this.orientation);
+    vec3_transformQuat(transformedNormal, normal, this.orientation);
     return transformedNormal;
   }
 
@@ -333,11 +333,11 @@ export class CubeRenderer {
     const currentAngle = totalRotation * animationProgress;
 
     // Create rotation quaternion for current progress
-    const rotationQuat = Math3D.quat_fromAxisAngle(axis, currentAngle);
+    const rotationQuat = quat_fromAxisAngle(axis, currentAngle);
 
     // Apply rotation to starting orientation
-    Math3D.quat_multiply(this.orientation, rotationQuat, startOrientation);
-    Math3D.quat_normalize(this.orientation, this.orientation);
+    quat_multiply(this.orientation, rotationQuat, startOrientation);
+    quat_normalize(this.orientation, this.orientation);
   }
 
   getRotationMatrix(axis, angle) {
@@ -445,7 +445,7 @@ export class CubeRenderer {
     }
 
     const rotatedPoint = [0, 0, 0];
-    Math3D.vec3_transformQuat(rotatedPoint, [x, y, z], this.orientation);
+    vec3_transformQuat(rotatedPoint, [x, y, z], this.orientation);
 
     const x1 = rotatedPoint[0];
     const y1 = rotatedPoint[1];

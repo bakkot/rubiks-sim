@@ -318,7 +318,7 @@
     <script type="module">
       import { RubiksCube } from './cube.js';
       import { CubeRenderer } from './renderer.js';
-      import { Math3D } from './3d-math.js';
+      import { quat_fromAxisAngle, quat_multiply, quat_normalize } from './3d-math.js';
 
       const canvas = document.getElementById('canvas');
       window.cube = new RubiksCube();
@@ -483,16 +483,16 @@
         // Create a temporary quaternion to represent the new rotation
         const deltaQuat = [0, 0, 0, 1];
 
-        const rotY = Math3D.quat_fromAxisAngle([0, 1, 0], -deltaX * rotationSpeed);
+        const rotY = quat_fromAxisAngle([0, 1, 0], -deltaX * rotationSpeed);
 
-        const rotX = Math3D.quat_fromAxisAngle([1, 0, 0], deltaY * rotationSpeed);
+        const rotX = quat_fromAxisAngle([1, 0, 0], deltaY * rotationSpeed);
 
-        Math3D.quat_multiply(deltaQuat, rotY, rotX);
+        quat_multiply(deltaQuat, rotY, rotX);
 
-        Math3D.quat_multiply(renderer.orientation, deltaQuat, renderer.orientation);
+        quat_multiply(renderer.orientation, deltaQuat, renderer.orientation);
 
         // Normalize the result to prevent floating point errors from accumulating
-        Math3D.quat_normalize(renderer.orientation, renderer.orientation);
+        quat_normalize(renderer.orientation, renderer.orientation);
 
         lastX = e.clientX;
         lastY = e.clientY;
@@ -509,9 +509,9 @@
 
       function rotateZ(direction) {
         const rotationSpeed = 0.02;
-        const zRotation = Math3D.quat_fromAxisAngle([0, 0, 1], direction * rotationSpeed);
-        Math3D.quat_multiply(renderer.orientation, zRotation, renderer.orientation);
-        Math3D.quat_normalize(renderer.orientation, renderer.orientation);
+        const zRotation = quat_fromAxisAngle([0, 0, 1], direction * rotationSpeed);
+        quat_multiply(renderer.orientation, zRotation, renderer.orientation);
+        quat_normalize(renderer.orientation, renderer.orientation);
         renderer.render();
       }
 
