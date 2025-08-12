@@ -156,12 +156,12 @@ export class CubeRenderer {
   // Get the reorientation move for slice moves
   getSliceReorientationMove(sliceMove) {
     const sliceToReorientationMap = {
-      'M': 'x',
-      "M'": "x'",
-      'E': 'y',
-      "E'": "y'",
-      'S': "z'",
-      "S'": 'z',
+      'M': "x'",
+      "M'": 'x',
+      'E': "y'",
+      "E'": 'y',
+      'S': 'z',
+      "S'": "z'",
     };
     
     return sliceToReorientationMap[sliceMove];
@@ -173,12 +173,12 @@ export class CubeRenderer {
     const isPrime = doubleMove.includes("'");
     
     const doubleToReorientationMap = {
-      'r': isPrime ? 'x' : "x'",
-      'l': isPrime ? "x'" : 'x',
-      'u': isPrime ? 'y' : "y'", 
-      'd': isPrime ? "y'" : 'y',
-      'f': isPrime ? "z" : "z'",
-      'b': isPrime ? "z'" : 'z'
+      'r': isPrime ? "x'" : 'x',
+      'l': isPrime ? 'x' : "x'",
+      'u': isPrime ? "y'" : 'y',
+      'd': isPrime ? 'y' : "y'",
+      'f': isPrime ? "z'" : "z",
+      'b': isPrime ? 'z' : "z'",
     };
     
     return doubleToReorientationMap[baseFace];
@@ -386,7 +386,7 @@ export class CubeRenderer {
     const mapping = this.getVisualToLogicalMapping(orientation);
 
     let axis;
-    const direction = isPrime ? -1 : 1;
+    const direction = isPrime ? 1 : -1;
 
     // Determine the rotation axis based on provided orientation
     switch (baseFace) {
