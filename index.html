@@ -832,17 +832,17 @@
 
           // Determine corresponding reorientation move
           if (move === 'M') {
-            reorientationMove = "x'";
+            reorientationMove = "x";
           } else if (move === "M'") {
-            reorientationMove = 'x';
+            reorientationMove = "x'";
           } else if (move === 'E') {
-            reorientationMove = "y'";
-          } else if (move === "E'") {
             reorientationMove = 'y';
+          } else if (move === "E'") {
+            reorientationMove = "y'";
           } else if (move === 'S') {
-            reorientationMove = 'z';
-          } else if (move === "S'") {
             reorientationMove = "z'";
+          } else if (move === "S'") {
+            reorientationMove = 'z';
           }
           
           return new Promise(resolve => {
@@ -895,7 +895,6 @@
                 // Convert slice moves back to dual face moves for cube state
                 const sliceMove = this.currentAnimation.move;
                 const dualFaceMoves = this.sliceToFaceMoves(sliceMove);
-                console.log({ sliceMove, ...dualFaceMoves });
                 this.cube.move(dualFaceMoves[0]);
                 this.cube.move(dualFaceMoves[1]);
               } else if (!this.currentAnimation.isReorientationMove) {
@@ -918,12 +917,12 @@
         sliceToFaceMoves(sliceMove) {
           // Convert slice moves to visual dual face moves
           const sliceToFaceMap = {
-            'M': ["R'", 'L'],     // M = R'+L  
-            "M'": ['R', "L'"],    // M' = R+L'
-            'E': ["U'", 'D'],     // E = U'+D  
-            "E'": ['U', "D'"],    // E' = U+D'
-            'S': ['F', "B'"],     // S = F+B'
-            "S'": ["F'", 'B']     // S' = F'+B
+            'M': ['R', "L'"],    // M = R+L'
+            "M'": ["R'", 'L'],     // M' = R'+L
+            'E': ['U', "D'"],    // E = U+D'
+            "E'": ["U'", 'D'],     // E' = U'+D
+            'S': ["F'", 'B'],     // S = F'+B
+            "S'": ['F', "B'"],     // S' = F+B'
           };
           
           const moves = sliceToFaceMap[sliceMove];
