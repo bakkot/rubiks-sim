@@ -8,8 +8,6 @@ export class CubeRenderer {
     this.orientation = [0.0991, 0.7921, 0.0990, 0.5941];
     this.scale = 100;
 
-    this.setupInteraction();
-
     this.animating = false;
     this.animationQueue = [];
     this.animationProgress = 0;
@@ -17,58 +15,8 @@ export class CubeRenderer {
     this.currentAnimation = null;
   }
 
-  setupInteraction() {
-    let isDragging = false;
-    let lastX, lastY;
-
-    this.canvas.addEventListener('mousedown', e => {
-      isDragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
-    });
-
-    const rotationSpeed = 0.008;
-
-    window.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-
-      const deltaX = e.clientX - lastX;
-      const deltaY = e.clientY - lastY;
-
-      // Create a temporary quaternion to represent the new rotation
-      const deltaQuat = Math3D.quat_create();
-
-      // Create a rotation from the horizontal drag (around the Y-axis)
-      const rotY = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 1, 0], -deltaX * rotationSpeed);
-
-      // Create a rotation from the vertical drag (around the X-axis)
-      const rotX = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [1, 0, 0], deltaY * rotationSpeed);
-
-      // Combine the two new rotations (Y rotation then X rotation)
-      Math3D.quat_multiply(deltaQuat, rotY, rotX);
-
-      // Combine this new delta rotation with the cube's current orientation.
-      // The order is crucial: new_orientation = delta_rotation * current_orientation
-      // This applies the drag relative to the screen/view axes.
-      Math3D.quat_multiply(this.orientation, deltaQuat, this.orientation);
-
-      // Normalize the result to prevent floating point errors from accumulating
-      Math3D.quat_normalize(this.orientation, this.orientation);
-
-      lastX = e.clientX;
-      lastY = e.clientY;
-
-      this.render();
-    });
-
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-  }
-
   // Map visual face positions to logical faces based on current rotation
   getVisualToLogicalMapping() {
-    // Define the standard face normals for each logical face
     const faceNormals = {
       U: [0, -1, 0], // Up face points down in our coordinate system
       D: [0, 1, 0], // Down face points up
@@ -78,7 +26,6 @@ export class CubeRenderer {
       B: [0, 0, 1], // Back face points away from viewer
     };
 
-    // Define visual directions we want to check against
     const visualDirections = {
       visualUp: [0, -1, 0], // Visual up is negative Y
       visualDown: [0, 1, 0], // Visual down is positive Y
@@ -88,10 +35,8 @@ export class CubeRenderer {
       visualBack: [0, 0, 1], // Visual back is positive Z
     };
 
-    const mapping = {};
-
     // For each visual direction, find which logical face is closest to it
-    Object.entries(visualDirections).forEach(([visualPos, visualDir]) => {
+    return Object.fromEntries(Object.entries(visualDirections).map(([visualPos, visualDir]) => {
       let bestMatch = null;
       let bestDot = -2; // Start with impossible dot product value
 
@@ -114,10 +59,8 @@ export class CubeRenderer {
         }
       });
 
-      mapping[visualPos] = bestMatch;
-    });
-
-    return mapping;
+      return [visualPos, bestMatch];
+    }));
   }
 
   // Convert visual move notation to logical move notation
@@ -422,15 +365,12 @@ export class CubeRenderer {
   }
 
   getAnimationRotation(move, piecePosition) {
-    // Handle slice moves by converting to equivalent dual face moves
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = this.sliceToFaceMoves(move);
-      if (piecePosition) {
-        if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
-          return this.getAnimationRotationForSingleMove(faceMoves[0]);
-        } else if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
-          return this.getAnimationRotationForSingleMove(faceMoves[1]);
-        }
+      if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
+        return this.getAnimationRotationForSingleMove(faceMoves[0]);
+      } else if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
+        return this.getAnimationRotationForSingleMove(faceMoves[1]);
       }
       return null;
     }
@@ -460,7 +400,6 @@ export class CubeRenderer {
   }
 
   isPieceAffectedByMove(pieceType, piecePos, move) {
-    // Handle slice moves by converting to equivalent face moves
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = this.sliceToFaceMoves(move);
       return this.isPieceAffectedBySingleMove(piecePos, faceMoves[0]) || 
@@ -473,7 +412,6 @@ export class CubeRenderer {
   isPieceAffectedBySingleMove(piecePos, move) {
     const face = move.charAt(0);
 
-    // Use boundaries that match the actual cube structure
     if (face === 'U') return piecePos.y < -0.5;
     if (face === 'D') return piecePos.y > 0.5;
     if (face === 'R') return piecePos.x > 0.5;
@@ -484,12 +422,10 @@ export class CubeRenderer {
     return false;
   }
 
-  project3D(x, y, z, applyAnimation, piecePosition = null) {
-    // Apply animation rotation if active
+  project3D(x, y, z, applyAnimation, piecePosition) {
     if (applyAnimation && this.currentAnimation) {
       const move = this.currentAnimation.move;
       
-      // Get the appropriate rotation for this animation
       const rotation = this.getAnimationRotation(move, piecePosition);
       if (rotation) {
         const newX = rotation.x(x, y, z);
@@ -572,7 +508,6 @@ export class CubeRenderer {
       { x: 1, y: 0, z: 1 }, // BR
     ];
 
-    // Draw center stickers
     const centers = [
       { pos: { x: 0, y: -1, z: 0 }, color: 'white' }, // U
       { pos: { x: 0, y: 1, z: 0 }, color: 'yellow' }, // D
@@ -809,12 +744,10 @@ export class CubeRenderer {
     // Sort stickers by z-depth (back to front)
     stickers.sort((a, b) => b.z - a.z);
 
-    // Draw all stickers
     stickers.forEach(sticker => {
       this.drawSticker(sticker.corners, sticker.color);
     });
 
-    // Draw solved indicator if cube is solved and no animations are running
     if (!this.animating && this.cube.isSolved()) {
       this.drawSolvedIndicator();
     }
@@ -825,17 +758,7 @@ export class CubeRenderer {
     const x = this.canvas.width - size - 10;
     const y = this.canvas.height - size - 10;
 
-    // Draw green circle background
-    this.ctx.beginPath();
-    this.ctx.arc(x + size/2, y + size/2, size/2, 0, 2 * Math.PI);
-    this.ctx.fillStyle = '#4CAF50';
-    this.ctx.fill();
-    this.ctx.strokeStyle = '#2E7D32';
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-
-    // Draw white checkmark
-    this.ctx.strokeStyle = 'white';
+    this.ctx.strokeStyle = '#4CAF50';
     this.ctx.lineWidth = 3;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';

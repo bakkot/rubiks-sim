@@ -309,23 +309,21 @@
     <script type="module">
       import { RubiksCube } from './cube.js';
       import { CubeRenderer } from './renderer.js';
+      import { Math3D } from './3d-math.js';
 
+      const canvas = document.getElementById('canvas');
       window.cube = new RubiksCube();
-      window.renderer = new CubeRenderer(document.getElementById('canvas'), cube);
+      window.renderer = new CubeRenderer(canvas, cube);
 
-      // Scramble function
       // This tries to be clever for the rendering. If doing statistics, be dumb instead.
-      async function scrambleCube() {
+      function scrambleCube() {
         const moves = ['U', "U'", 'D', "D'", 'R', "R'", 'L', "L'", 'F', "F'", 'B', "B'"];
         const scrambleLength = 30 + Math.floor(Math.random() * 11);
 
-        // Helper function to get the base face (without prime)
         const getBaseFace = (move) => move.replace("'", "");
 
-        // Helper function to get the inverse of a move
         const getInverse = (move) => move.includes("'") ? move.replace("'", "") : move + "'";
 
-        // Helper function to check if two faces are opposite
         const areOppositeFaces = (face1, face2) => {
           const opposites = { 'U': 'D', 'D': 'U', 'R': 'L', 'L': 'R', 'F': 'B', 'B': 'F' };
           return opposites[face1] === face2;
@@ -340,11 +338,9 @@
             const lastMove = scramble[scramble.length - 1];
             const lastBaseFace = getBaseFace(lastMove);
 
-            // Remove inverse of last move
             const lastInverse = getInverse(lastMove);
             validMoves = validMoves.filter(move => move !== lastInverse);
 
-            // If last two moves were on same face, prevent third consecutive same face move
             if (scramble.length > 1) {
               const secondLastMove = scramble[scramble.length - 2];
               const secondLastBaseFace = getBaseFace(secondLastMove);
@@ -375,14 +371,9 @@
             }
           }
 
-          // If we've filtered out all moves (shouldn't happen with good logic), fall back to rejection
-          if (validMoves.length === 0) {
-            validMoves = [...moves];
-          }
-
           const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
           scramble.push(randomMove);
-          await renderer.animateMove(randomMove);
+          renderer.animateMove(randomMove);
         }
       }
 
@@ -391,15 +382,12 @@
         renderer.render(); // Will show checkmark since cube is now solved
       }
 
-      // Reset orientation function
       function resetOrientation() {
         renderer.orientation = [0.1, 0.8, 0.1, 0.6];
         renderer.render();
       }
 
-      // Parse move sequence string into individual moves
       function parseMoveSequence(sequence) {
-        // Remove all whitespace
         const cleanSequence = sequence.replace(/\s/g, '');
         const moves = [];
         const invalidChars = [];
@@ -417,7 +405,7 @@
                 move += "'";
                 i++;
               } else if (cleanSequence[i + 1] === "2") {
-                moves.push(move, move); // Add twice for double move
+                moves.push(move, move);
                 i += 2;
                 continue;
               }
@@ -433,7 +421,6 @@
         return { moves, invalidChars };
       }
 
-      // Show error modal
       function showErrorModal(message) {
         const dialog = document.getElementById('error-dialog');
         const messageElement = document.getElementById('error-message');
@@ -441,14 +428,12 @@
         dialog.showModal();
       }
 
-      // Hide error modal
       function hideErrorModal() {
         const dialog = document.getElementById('error-dialog');
         dialog.close();
       }
 
-      // Execute a sequence of moves
-      async function executeMoveSequence() {
+      function executeMoveSequence() {
         const input = document.getElementById('move-sequence');
         const sequence = input.value.trim();
         
@@ -456,94 +441,121 @@
 
         const result = parseMoveSequence(sequence);
         
-        // Check for invalid characters
         if (result.invalidChars.length > 0) {
           const invalidStr = result.invalidChars.map(c => `'${c}'`).join(', ');
           showErrorModal(`Unrecognized characters: ${invalidStr}<br><br>Valid characters are: U, D, R, L, F, B, x, y, z, ', 2`);
           return;
         }
 
-        // Execute each move in sequence using visual moves
         for (const move of result.moves) {
-          await renderer.animateVisualMove(move);
+          renderer.animateVisualMove(move);
         }
       }
 
-      let isRotating = false;
-      let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
-      let rotationAnimationId = null;
+      let isDragging = false;
+      let lastX, lastY;
 
-      // Z-axis rotation functions
+      canvas.addEventListener('mousedown', e => {
+        isDragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+
+      const rotationSpeed = 0.008;
+
+      window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+
+        const deltaX = e.clientX - lastX;
+        const deltaY = e.clientY - lastY;
+
+        // Create a temporary quaternion to represent the new rotation
+        const deltaQuat = Math3D.quat_create();
+
+        const rotY = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 1, 0], -deltaX * rotationSpeed);
+
+        const rotX = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [1, 0, 0], deltaY * rotationSpeed);
+
+        Math3D.quat_multiply(deltaQuat, rotY, rotX);
+
+        Math3D.quat_multiply(renderer.orientation, deltaQuat, renderer.orientation);
+
+        // Normalize the result to prevent floating point errors from accumulating
+        Math3D.quat_normalize(renderer.orientation, renderer.orientation);
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        renderer.render();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
+
+      let isRotatingZ = false;
+      let rotationDirection = 0; // 1 for clockwise, -1 for counterclockwise
+
       function rotateZ(direction) {
-        const rotationSpeed = 0.02; // Adjust speed as needed
+        const rotationSpeed = 0.02;
         const zRotation = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 0, 1], direction * rotationSpeed);
         Math3D.quat_multiply(renderer.orientation, zRotation, renderer.orientation);
         Math3D.quat_normalize(renderer.orientation, renderer.orientation);
         renderer.render();
       }
 
-      function startRotation(direction) {
-        if (isRotating) return;
-        isRotating = true;
+      function startZRotation(direction) {
+        if (isRotatingZ) return;
+        isRotatingZ = true;
         rotationDirection = direction;
         
         function animate() {
-          if (isRotating) {
+          if (isRotatingZ) {
             rotateZ(rotationDirection);
-            rotationAnimationId = requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
           }
         }
         animate();
       }
 
-      function stopRotation() {
-        isRotating = false;
-        if (rotationAnimationId) {
-          cancelAnimationFrame(rotationAnimationId);
-          rotationAnimationId = null;
-        }
+      function stopZRotation() {
+        isRotatingZ = false;
       }
 
-
-      // Initial render
-      renderer.render();
-
-      // Setup rotation button event handlers
       const clockwiseBtn = document.getElementById('clockwise-btn');
       const counterclockwiseBtn = document.getElementById('counterclockwise-btn');
 
-      // Clockwise button events
       clockwiseBtn.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        startRotation(-1);
+        startZRotation(-1);
       });
 
       clockwiseBtn.addEventListener('mouseup', (e) => {
         e.preventDefault();
-        stopRotation();
+        stopZRotation();
       });
 
       clockwiseBtn.addEventListener('mouseleave', (e) => {
-        stopRotation();
+        stopZRotation();
       });
 
-      // Counterclockwise button events  
       counterclockwiseBtn.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        startRotation(1);
+        startZRotation(1);
       });
 
       counterclockwiseBtn.addEventListener('mouseup', (e) => {
         e.preventDefault();
-        stopRotation();
+        stopZRotation();
       });
 
       counterclockwiseBtn.addEventListener('mouseleave', (e) => {
-        stopRotation();
+        stopZRotation();
       });
 
       document.addEventListener('mouseup', () => {
-        stopRotation();
+        stopZRotation();
       });
 
       document.getElementById('reset-orientation-btn').addEventListener('click', resetOrientation);
@@ -559,6 +571,8 @@
       });
 
       document.getElementById('execute-move-sequence').addEventListener('click', executeMoveSequence);
+
+      renderer.render();
     </script>
   </body>
 </html>
