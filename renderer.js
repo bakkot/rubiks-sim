@@ -135,6 +135,9 @@ export class CubeRenderer {
   }
 
   animateSimpleMove(move) {
+    if (!['U', 'D', 'R', 'L', 'F', 'B', "U'", "D'", "R'", "L'", "F'", "B'"].includes(move)) {
+      throw new Error(`unknown simple move ${move}`);
+    }
     return new Promise(resolve => {
       this.animationQueue.push({ move, resolve });
       if (!this.animating) {
@@ -144,6 +147,9 @@ export class CubeRenderer {
   }
 
   animateReorientationMove(move) {
+    if (!['x', "y'", 'z', "x'", 'y', "z'"].includes(move)) {
+      throw new Error(`unknown reorientation move ${move}`);
+    }
     return new Promise(resolve => {
       this.animationQueue.push({
         move,
