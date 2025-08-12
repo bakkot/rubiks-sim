@@ -157,20 +157,18 @@ export class CubeRenderer {
   }
 
   animateMove(move) {
-    const baseFace = move[0];
+    const kind = this.getMoveKind(move);
 
-    // Handle reorientation moves (x, y, z)
-    if (['x', 'y', 'z'].includes(baseFace)) {
-      return this.animateReorientationMove(move);
+    switch (kind) {
+      case 'simple':
+        return this.animateSimpleMove(move);
+      case 'reorientation':
+        return this.animateReorientationMove(move);
+      case 'slice':
+        return this.animateSliceMove(move);
+      default:
+        throw new Error(`Unknown move kind: ${kind}`);
     }
-
-    // Handle slice moves (M, E, S)
-    if (['M', 'E', 'S'].includes(baseFace)) {
-      return this.animateSliceMove(move);
-    }
-
-    // Handle regular face moves
-    return this.animateSimpleMove(move);
   }
 
   animateSimpleMove(move) {
