@@ -625,6 +625,29 @@
           }
         });
       });
+
+      document.addEventListener('keydown', e => {
+        const activeElement = document.activeElement;
+        if (activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.contentEditable === 'true'
+        )) {
+          return;
+        }
+
+        let { key } = e;
+        key = key.toLowerCase();
+
+        if (!'udrlbfmesxyz'.includes(key)) return;
+        e.preventDefault();
+
+        if ('udrlbfmes'.includes(key)) key = key.toUpperCase();
+
+        if (e.shiftKey) key += "'";
+
+        renderer.animateMove(key);
+      });
     </script>
   </body>
 </html>
