@@ -277,12 +277,12 @@
 
         <div class="controls">
           <div class="slice-buttons">
-            <button onclick="renderer.animateVisualMove('R+L\'')">M'</button>
-            <button onclick="renderer.animateVisualMove('L+R\'')">M</button>
-            <button onclick="renderer.animateVisualMove('U+D\'')">E'</button>
-            <button onclick="renderer.animateVisualMove('D+U\'')">E</button>
-            <button onclick="renderer.animateVisualMove('F+B\'')">S</button>
-            <button onclick="renderer.animateVisualMove('B+F\'')">S'</button>
+            <button onclick="renderer.animateVisualMove('M\'')">M'</button>
+            <button onclick="renderer.animateVisualMove('M')">M</button>
+            <button onclick="renderer.animateVisualMove('E\'')">E'</button>
+            <button onclick="renderer.animateVisualMove('E')">E</button>
+            <button onclick="renderer.animateVisualMove('S')">S</button>
+            <button onclick="renderer.animateVisualMove('S\'')">S'</button>
           </div>
         </div>
 
@@ -813,8 +813,8 @@
             return this.animateReorientationMove(visualMove);
           }
           
-          // Handle slice moves (R+L', U+D', F+B')
-          if (visualMove.includes('+')) {
+          // Handle slice moves (M, E, S)
+          if (['M', 'E', 'S'].includes(baseFace)) {
             return this.animateSliceMove(visualMove);
           }
           
@@ -824,41 +824,30 @@
         }
 
         // Animate slice moves (M, E, S)
-        animateSliceMove(dualMove) {
-          // Parse dual move like "R+L'" and convert to slice notation
-          const [move1, move2] = dualMove.split('+');
-          
-          let sliceMove = null;
-          let reorientationMove = null;
-          
-          // Convert dual face moves to slice moves
-          if ((move1 === 'R' && move2 === "L'") || (move1 === 'L' && move2 === "R'")) {
-            sliceMove = "M'";  // R+L' = M'
-            reorientationMove = 'x';
-          } else if ((move1 === "R'" && move2 === 'L') || (move1 === "L'" && move2 === 'R')) {
-            sliceMove = 'M';   // R'+L = M
-            reorientationMove = "x'";
-          } else if ((move1 === 'U' && move2 === "D'") || (move1 === 'D' && move2 === "U'")) {
-            sliceMove = "E'";  // U+D' = E'
-            reorientationMove = 'y';
-          } else if ((move1 === "U'" && move2 === 'D') || (move1 === "D'" && move2 === 'U')) {
-            sliceMove = 'E';   // U'+D = E
-            reorientationMove = "y'";
-          } else if ((move1 === 'F' && move2 === "B'") || (move1 === 'B' && move2 === "F'")) {
-            sliceMove = 'S';   // F+B' = S
-            reorientationMove = 'z';
-          } else if ((move1 === "F'" && move2 === 'B') || (move1 === "B'" && move2 === 'F')) {
-            sliceMove = "S'";  // F'+B = S'
-            reorientationMove = "z'";
+        animateSliceMove(move) {
+          if (!['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
+            throw new Error(`unknown slice move ${move}`);
           }
-          
-          if (!sliceMove) {
-            throw new Error(`Unknown slice move: ${dualMove}`);
+          let reorientationMove;
+
+          // Determine corresponding reorientation move
+          if (move === 'M') {
+            reorientationMove = "x'";
+          } else if (move === "M'") {
+            reorientationMove = 'x';
+          } else if (move === 'E') {
+            reorientationMove = "y'";
+          } else if (move === "E'") {
+            reorientationMove = 'y';
+          } else if (move === 'S') {
+            reorientationMove = 'z';
+          } else if (move === "S'") {
+            reorientationMove = "z'";
           }
           
           return new Promise(resolve => {
             this.animationQueue.push({ 
-              move: sliceMove, 
+              move,
               resolve,
               isSliceMove: true,
               isReorientationMove: true,
@@ -877,8 +866,8 @@
           }
 
           this.animating = true;
-          const { move, resolve, isDualMove, isSliceMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
-          this.currentAnimation = { move, resolve, startTime: Date.now(), isDualMove, isSliceMove, isReorientationMove };
+          const { move, resolve, isSliceMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
+          this.currentAnimation = { move, resolve, startTime: Date.now(), isSliceMove, isReorientationMove };
 
           // For reorientation moves, set up the rotation data
           let reorientationData = null;
@@ -908,11 +897,6 @@
                 const dualFaceMoves = this.sliceToFaceMoves(sliceMove);
                 this.cube.move(dualFaceMoves[0]);
                 this.cube.move(dualFaceMoves[1]);
-              } else if (this.currentAnimation.isDualMove) {
-                // Apply the face moves to the cube
-                const [move1, move2] = this.currentAnimation.move.split('+');
-                this.cube.move(move1);
-                this.cube.move(move2);
               } else if (!this.currentAnimation.isReorientationMove) {
                 // Apply single face moves (reorientation moves don't change cube state)
                 this.cube.move(this.currentAnimation.move);
@@ -931,7 +915,7 @@
         }
 
         sliceToFaceMoves(sliceMove) {
-          // Convert slice moves back to visual dual face moves
+          // Convert slice moves to visual dual face moves
           const sliceToFaceMap = {
             'M': ["R'", 'L'],     // M = R'+L  
             "M'": ['R', "L'"],    // M' = R+L'
@@ -1051,20 +1035,6 @@
                 return this.getAnimationRotationForSingleMove(faceMoves[0]);
               } else if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
                 return this.getAnimationRotationForSingleMove(faceMoves[1]);
-              }
-            }
-            return null;
-          }
-
-          // Handle dual moves by determining which specific move to apply
-          if (move.includes('+')) {
-            // For dual moves, we need the piece position to determine which move to apply
-            if (piecePosition) {
-              const [move1, move2] = move.split('+');
-              if (this.isPieceAffectedBySingleMove(piecePosition, move1)) {
-                return this.getAnimationRotationForSingleMove(move1);
-              } else if (this.isPieceAffectedBySingleMove(piecePosition, move2)) {
-                return this.getAnimationRotationForSingleMove(move2);
               }
             }
             return null;
