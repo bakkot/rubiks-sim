@@ -102,7 +102,7 @@ export class CubeRenderer {
   }
 
   // Helper function to get face normal in world space
-  getFaceNormal(logicalFace) {
+  getFaceNormal(logicalFace, orientation = this.orientation) {
     const faceNormals = {
       U: [0, -1, 0],
       D: [0, 1, 0],
@@ -113,7 +113,7 @@ export class CubeRenderer {
     };
 
     const normal = faceNormals[logicalFace];
-    const transformedNormal = vec3_transformQuat(normal, this.orientation);
+    const transformedNormal = vec3_transformQuat(normal, orientation);
     return transformedNormal;
   }
 
@@ -220,7 +220,7 @@ export class CubeRenderer {
     let reorientationData = null;
     if (isReorientationMove) {
       const moveToUse = reorientationMove || move; // Use reorientationMove if it's a combined move
-      reorientationData = this.setupReorientationAnimation(moveToUse);
+      reorientationData = this.setupReorientationAnimation(moveToUse, orientation);
     }
 
     const animate = () => {
@@ -288,39 +288,39 @@ export class CubeRenderer {
     return [this.visualMoveToLogical(moves[0], orientation), this.visualMoveToLogical(moves[1], orientation)];
   }
 
-  setupReorientationAnimation(move) {
+  setupReorientationAnimation(move, orientation = this.orientation) {
     const isPrime = move.includes("'");
     const baseFace = move[0];
-    const mapping = this.getVisualToLogicalMapping();
+    const mapping = this.getVisualToLogicalMapping(orientation);
 
     let axis;
     const direction = isPrime ? -1 : 1;
 
-    // Determine the rotation axis based on current orientation
+    // Determine the rotation axis based on provided orientation
     switch (baseFace) {
       case 'x':
         // Rotate around R-L axis (current visual right to left)
         const rFace = mapping.visualRight;
         const lFace = mapping.visualLeft;
         // Get the axis by finding the vector between R and L face normals
-        const rNormal = this.getFaceNormal(rFace);
-        const lNormal = this.getFaceNormal(lFace);
+        const rNormal = this.getFaceNormal(rFace, orientation);
+        const lNormal = this.getFaceNormal(lFace, orientation);
         axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
         break;
       case 'y':
         // Rotate around U-D axis (current visual up to down)
         const uFace = mapping.visualUp;
         const dFace = mapping.visualDown;
-        const uNormal = this.getFaceNormal(uFace);
-        const dNormal = this.getFaceNormal(dFace);
+        const uNormal = this.getFaceNormal(uFace, orientation);
+        const dNormal = this.getFaceNormal(dFace, orientation);
         axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
         break;
       case 'z':
         // Rotate around F-B axis (current visual front to back)
         const fFace = mapping.visualFront;
         const bFace = mapping.visualBack;
-        const fNormal = this.getFaceNormal(fFace);
-        const bNormal = this.getFaceNormal(bFace);
+        const fNormal = this.getFaceNormal(fFace, orientation);
+        const bNormal = this.getFaceNormal(bFace, orientation);
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
       default:
@@ -355,12 +355,11 @@ export class CubeRenderer {
 
   // Update stored orientations in queue after reorientation move
   updateQueueOrientations() {
-    console.log(this.currentAnimation);
     const { reorientationMove, move } = this.currentAnimation;
     const moveToUse = reorientationMove || move;
     
     // Calculate the rotation that was just applied
-    const reorientationData = this.setupReorientationAnimation(moveToUse);
+    const reorientationData = this.setupReorientationAnimation(moveToUse, this.currentAnimation.storedOrientation);
     const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
     
     // Update all remaining queue entries
