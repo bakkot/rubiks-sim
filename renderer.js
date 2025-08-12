@@ -72,7 +72,7 @@ export class CubeRenderer {
   visualMoveToLogical(visualMove) {
     const mapping = this.getVisualToLogicalMapping();
     const isPrime = visualMove.includes("'");
-    const baseFace = visualMove.charAt(0);
+    const baseFace = visualMove[0];
 
     let logicalFace;
     switch (baseFace) {
@@ -276,7 +276,7 @@ export class CubeRenderer {
 
   setupReorientationAnimation(move) {
     const isPrime = move.includes("'");
-    const baseFace = move.charAt(0);
+    const baseFace = move[0];
     const mapping = this.getVisualToLogicalMapping();
 
     let axis;
@@ -414,7 +414,7 @@ export class CubeRenderer {
   }
 
   isPieceAffectedBySingleMove(piecePos, move) {
-    const face = move.charAt(0);
+    const face = move[0];
 
     if (face === 'U') return piecePos.y < -0.5;
     if (face === 'D') return piecePos.y > 0.5;
