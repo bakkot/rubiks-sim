@@ -118,6 +118,37 @@
         align-items: center;
       }
 
+      .speed-controls {
+        position: absolute;
+        left: -90px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        font-size: 14px;
+        color: #333;
+      }
+
+      .speed-controls label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+
+      .speed-controls label:hover {
+        background-color: rgba(255, 152, 0, 0.1);
+      }
+
+      .speed-controls input[type="radio"] {
+        margin: 0;
+      }
+
       .rotation-button {
         width: 50px;
         height: 50px;
@@ -227,6 +258,17 @@
       <div class="canvas-container">
         <div class="canvas-with-rotation">
           <canvas id="canvas" width="600" height="600"></canvas>
+
+          <div class="speed-controls">
+            <label>
+              <input type="radio" name="animation-speed" value="fast">
+              Fast
+            </label>
+            <label>
+              <input type="radio" name="animation-speed" value="slow" checked>
+              Slow
+            </label>
+          </div>
 
           <div class="rotation-controls">
             <button class="rotation-button" id="counterclockwise-btn" title="Hold to rotate cube counterclockwise">
@@ -573,6 +615,16 @@
       });
 
       document.getElementById('execute-move-sequence').addEventListener('click', executeMoveSequence);
+
+      document.querySelectorAll('input[name="animation-speed"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.value === 'fast') {
+            renderer.animationDuration = 100;
+          } else if (e.target.value === 'slow') {
+            renderer.animationDuration = 300;
+          }
+        });
+      });
     </script>
   </body>
 </html>
