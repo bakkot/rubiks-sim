@@ -752,11 +752,6 @@
             case 'B':
               logicalFace = mapping.visualBack;
               break;
-            case 'x':
-            case 'y':
-            case 'z':
-              // Reorientation moves don't need logical conversion
-              return visualMove;
             default:
               throw new Error(`not a move: ${baseFace}`);
           }
@@ -1520,7 +1515,7 @@
         while (i < cleanSequence.length) {
           const char = cleanSequence[i];
           
-          if (/[UDRLFBxyz]/.test(char)) {
+          if (/[UDRLFBxyzMES]/.test(char)) {
             let move = char;
             
             // Check for prime or 2
