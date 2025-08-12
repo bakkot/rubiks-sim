@@ -48,8 +48,7 @@ export class CubeRenderer {
         // Check each logical face
         Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
           // Transform the logical face normal by the current orientation
-          const transformedNormal = [0, 0, 0];
-          vec3_transformQuat(transformedNormal, normal, this.orientation);
+          const transformedNormal = vec3_transformQuat(normal, this.orientation);
 
           // Calculate dot product to find how aligned they are
           const dot =
@@ -114,8 +113,7 @@ export class CubeRenderer {
     };
 
     const normal = faceNormals[logicalFace];
-    const transformedNormal = [0, 0, 0];
-    vec3_transformQuat(transformedNormal, normal, this.orientation);
+    const transformedNormal = vec3_transformQuat(normal, this.orientation);
     return transformedNormal;
   }
 
@@ -336,8 +334,7 @@ export class CubeRenderer {
     const rotationQuat = quat_fromAxisAngle(axis, currentAngle);
 
     // Apply rotation to starting orientation
-    quat_multiply(this.orientation, rotationQuat, startOrientation);
-    quat_normalize(this.orientation, this.orientation);
+    this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
   getRotationMatrix(axis, angle) {
@@ -444,8 +441,7 @@ export class CubeRenderer {
       }
     }
 
-    const rotatedPoint = [0, 0, 0];
-    vec3_transformQuat(rotatedPoint, [x, y, z], this.orientation);
+    const rotatedPoint = vec3_transformQuat([x, y, z], this.orientation);
 
     const x1 = rotatedPoint[0];
     const y1 = rotatedPoint[1];

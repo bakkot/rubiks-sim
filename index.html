@@ -480,19 +480,12 @@
         const deltaX = e.clientX - lastX;
         const deltaY = e.clientY - lastY;
 
-        // Create a temporary quaternion to represent the new rotation
-        const deltaQuat = [0, 0, 0, 1];
-
+        // Create rotation quaternions
         const rotY = quat_fromAxisAngle([0, 1, 0], -deltaX * rotationSpeed);
-
         const rotX = quat_fromAxisAngle([1, 0, 0], deltaY * rotationSpeed);
 
-        quat_multiply(deltaQuat, rotY, rotX);
-
-        quat_multiply(renderer.orientation, deltaQuat, renderer.orientation);
-
-        // Normalize the result to prevent floating point errors from accumulating
-        quat_normalize(renderer.orientation, renderer.orientation);
+        const deltaQuat = quat_multiply(rotY, rotX);
+        renderer.orientation = quat_normalize(quat_multiply(deltaQuat, renderer.orientation));
 
         lastX = e.clientX;
         lastY = e.clientY;
@@ -510,8 +503,7 @@
       function rotateZ(direction) {
         const rotationSpeed = 0.02;
         const zRotation = quat_fromAxisAngle([0, 0, 1], direction * rotationSpeed);
-        quat_multiply(renderer.orientation, zRotation, renderer.orientation);
-        quat_normalize(renderer.orientation, renderer.orientation);
+        renderer.orientation = quat_normalize(quat_multiply(zRotation, renderer.orientation));
         renderer.render();
       }
 
