@@ -1,16 +1,13 @@
 export const Math3D = {
-  quat_create: function () {
-    return [0, 0, 0, 1];
-  },
-
-  quat_fromAxisAngle: function (out, axis, rad) {
+  quat_fromAxisAngle: function (axis, rad) {
     const halfAngle = rad / 2;
     const s = Math.sin(halfAngle);
-    out[0] = axis[0] * s;
-    out[1] = axis[1] * s;
-    out[2] = axis[2] * s;
-    out[3] = Math.cos(halfAngle);
-    return out;
+    return [
+      axis[0] * s,
+      axis[1] * s,
+      axis[2] * s,
+      Math.cos(halfAngle),
+    ];
   },
 
   quat_multiply: function (out, a, b) {

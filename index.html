@@ -258,40 +258,40 @@
 
         <div class="controls">
           <div class="face-buttons">
-            <button onclick="renderer.animateVisualMove('U')">U</button>
-            <button onclick="renderer.animateVisualMove('U\'')">U'</button>
-            <button onclick="renderer.animateVisualMove('D')">D</button>
-            <button onclick="renderer.animateVisualMove('D\'')">D'</button>
-            <button onclick="renderer.animateVisualMove('R')">R</button>
-            <button onclick="renderer.animateVisualMove('R\'')">R'</button>
-            <button onclick="renderer.animateVisualMove('L')">L</button>
-            <button onclick="renderer.animateVisualMove('L\'')">L'</button>
-            <button onclick="renderer.animateVisualMove('F')">F</button>
-            <button onclick="renderer.animateVisualMove('F\'')">F'</button>
-            <button onclick="renderer.animateVisualMove('B')">B</button>
-            <button onclick="renderer.animateVisualMove('B\'')">B'</button>
+            <button onclick="renderer.animateMove('U')">U</button>
+            <button onclick="renderer.animateMove('U\'')">U'</button>
+            <button onclick="renderer.animateMove('D')">D</button>
+            <button onclick="renderer.animateMove('D\'')">D'</button>
+            <button onclick="renderer.animateMove('R')">R</button>
+            <button onclick="renderer.animateMove('R\'')">R'</button>
+            <button onclick="renderer.animateMove('L')">L</button>
+            <button onclick="renderer.animateMove('L\'')">L'</button>
+            <button onclick="renderer.animateMove('F')">F</button>
+            <button onclick="renderer.animateMove('F\'')">F'</button>
+            <button onclick="renderer.animateMove('B')">B</button>
+            <button onclick="renderer.animateMove('B\'')">B'</button>
           </div>
         </div>
 
         <div class="controls">
           <div class="reorientation-buttons">
-            <button onclick="renderer.animateVisualMove('x')">x</button>
-            <button onclick="renderer.animateVisualMove('x\'')">x'</button>
-            <button onclick="renderer.animateVisualMove('y')">y</button>
-            <button onclick="renderer.animateVisualMove('y\'')">y'</button>
-            <button onclick="renderer.animateVisualMove('z')">z</button>
-            <button onclick="renderer.animateVisualMove('z\'')">z'</button>
+            <button onclick="renderer.animateMove('x')">x</button>
+            <button onclick="renderer.animateMove('x\'')">x'</button>
+            <button onclick="renderer.animateMove('y')">y</button>
+            <button onclick="renderer.animateMove('y\'')">y'</button>
+            <button onclick="renderer.animateMove('z')">z</button>
+            <button onclick="renderer.animateMove('z\'')">z'</button>
           </div>
         </div>
 
         <div class="controls">
           <div class="slice-buttons">
-            <button onclick="renderer.animateVisualMove('M')">M</button>
-            <button onclick="renderer.animateVisualMove('M\'')">M'</button>
-            <button onclick="renderer.animateVisualMove('E')">E</button>
-            <button onclick="renderer.animateVisualMove('E\'')">E'</button>
-            <button onclick="renderer.animateVisualMove('S')">S</button>
-            <button onclick="renderer.animateVisualMove('S\'')">S'</button>
+            <button onclick="renderer.animateMove('M')">M</button>
+            <button onclick="renderer.animateMove('M\'')">M'</button>
+            <button onclick="renderer.animateMove('E')">E</button>
+            <button onclick="renderer.animateMove('E\'')">E'</button>
+            <button onclick="renderer.animateMove('S')">S</button>
+            <button onclick="renderer.animateMove('S\'')">S'</button>
           </div>
         </div>
 
@@ -382,14 +382,13 @@
 
           const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
           scramble.push(randomMove);
-          renderer.animateMove(randomMove);
+          renderer.animateSimpleMove(randomMove);
         }
       }
 
       function resetCube() {
         cube.reset();
-        renderer.resetOrientation();
-        renderer.render();
+        renderer.reset();
       }
 
       function resetOrientation() {
@@ -460,7 +459,7 @@
         }
 
         for (const move of result.moves) {
-          renderer.animateVisualMove(move);
+          renderer.animateMove(move);
         }
       }
 
@@ -482,11 +481,11 @@
         const deltaY = e.clientY - lastY;
 
         // Create a temporary quaternion to represent the new rotation
-        const deltaQuat = Math3D.quat_create();
+        const deltaQuat = [0, 0, 0, 1];
 
-        const rotY = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 1, 0], -deltaX * rotationSpeed);
+        const rotY = Math3D.quat_fromAxisAngle([0, 1, 0], -deltaX * rotationSpeed);
 
-        const rotX = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [1, 0, 0], deltaY * rotationSpeed);
+        const rotX = Math3D.quat_fromAxisAngle([1, 0, 0], deltaY * rotationSpeed);
 
         Math3D.quat_multiply(deltaQuat, rotY, rotX);
 
@@ -510,7 +509,7 @@
 
       function rotateZ(direction) {
         const rotationSpeed = 0.02;
-        const zRotation = Math3D.quat_fromAxisAngle(Math3D.quat_create(), [0, 0, 1], direction * rotationSpeed);
+        const zRotation = Math3D.quat_fromAxisAngle([0, 0, 1], direction * rotationSpeed);
         Math3D.quat_multiply(renderer.orientation, zRotation, renderer.orientation);
         Math3D.quat_normalize(renderer.orientation, renderer.orientation);
         renderer.render();
@@ -582,8 +581,6 @@
       });
 
       document.getElementById('execute-move-sequence').addEventListener('click', executeMoveSequence);
-
-      renderer.render();
     </script>
   </body>
 </html>
