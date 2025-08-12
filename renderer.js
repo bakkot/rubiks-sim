@@ -117,6 +117,45 @@ export class CubeRenderer {
     return transformedNormal;
   }
 
+  // Determine the kind of move
+  getMoveKind(move) {
+    const baseFace = move[0];
+    const moveKinds = {
+      'U': 'simple',
+      'D': 'simple',
+      'R': 'simple',
+      'L': 'simple',
+      'F': 'simple',
+      'B': 'simple',
+      'x': 'reorientation',
+      'y': 'reorientation', 
+      'z': 'reorientation',
+      'M': 'slice',
+      'E': 'slice',
+      'S': 'slice'
+    };
+    
+    const kind = moveKinds[baseFace];
+    if (!kind) {
+      throw new Error(`Unknown move: ${move}`);
+    }
+    return kind;
+  }
+
+  // Get the reorientation move for slice moves
+  getSliceReorientationMove(sliceMove) {
+    const sliceToReorientationMap = {
+      'M': 'x',
+      "M'": "x'",
+      'E': 'y',
+      "E'": "y'",
+      'S': "z'",
+      "S'": 'z',
+    };
+    
+    return sliceToReorientationMap[sliceMove];
+  }
+
   animateMove(move) {
     const baseFace = move[0];
 
@@ -151,12 +190,7 @@ export class CubeRenderer {
       throw new Error(`unknown reorientation move ${move}`);
     }
     return new Promise(resolve => {
-      this.animationQueue.push({
-        move,
-        resolve,
-        isReorientationMove: true,
-        orientation: [...this.orientation],
-      });
+      this.animationQueue.push({ move, resolve, orientation: [...this.orientation] });
       if (!this.animating) {
         this.processAnimationQueue();
       }
@@ -167,32 +201,9 @@ export class CubeRenderer {
     if (!['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       throw new Error(`unknown slice move ${move}`);
     }
-    let reorientationMove;
-
-    // Determine corresponding reorientation move
-    if (move === 'M') {
-      reorientationMove = 'x';
-    } else if (move === "M'") {
-      reorientationMove = "x'";
-    } else if (move === 'E') {
-      reorientationMove = 'y';
-    } else if (move === "E'") {
-      reorientationMove = "y'";
-    } else if (move === 'S') {
-      reorientationMove = "z'";
-    } else if (move === "S'") {
-      reorientationMove = 'z';
-    }
 
     return new Promise(resolve => {
-      this.animationQueue.push({
-        move,
-        resolve,
-        isSliceMove: true,
-        isReorientationMove: true,
-        reorientationMove,
-        orientation: [...this.orientation],
-      });
+      this.animationQueue.push({ move, resolve, orientation: [...this.orientation] });
       if (!this.animating) {
         this.processAnimationQueue();
       }
@@ -207,19 +218,23 @@ export class CubeRenderer {
     }
 
     this.animating = true;
-    const { move, resolve, isSliceMove, isReorientationMove, reorientationMove, orientation } = this.animationQueue.shift();
+    const { move, resolve, orientation } = this.animationQueue.shift();
+    
+    // Compute move properties
+    const kind = this.getMoveKind(move);
+    const reorientationMove = kind === 'slice' ? this.getSliceReorientationMove(move) : null;
 
     let processedMove = move;
-    if (!isSliceMove && !isReorientationMove) {
+    if (kind === 'simple') {
       processedMove = this.visualMoveToLogical(move, orientation);
     }
 
-    this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), isSliceMove, isReorientationMove, reorientationMove, storedOrientation: orientation };
+    this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), kind, reorientationMove, storedOrientation: orientation };
 
-    // For reorientation moves, set up the rotation data
+    // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
-    if (isReorientationMove) {
-      const moveToUse = reorientationMove || move; // Use reorientationMove if it's a combined move
+    if (kind === 'reorientation' || kind === 'slice') {
+      const moveToUse = reorientationMove || move; // Use reorientationMove for slice moves
       reorientationData = this.setupReorientationAnimation(moveToUse, orientation);
     }
 
@@ -229,7 +244,7 @@ export class CubeRenderer {
       this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
       // Handle reorientation animation
-      if (this.currentAnimation.isReorientationMove) {
+      if (this.currentAnimation.kind === 'reorientation' || this.currentAnimation.kind === 'slice') {
         this.updateReorientationAnimation(reorientationData, this.animationProgress);
       }
 
@@ -239,19 +254,19 @@ export class CubeRenderer {
         requestAnimationFrame(animate);
       } else {
         // Apply the actual move(s) to the cube state
-        if (this.currentAnimation.isSliceMove) {
+        if (this.currentAnimation.kind === 'slice') {
           // Convert slice moves back to dual face moves for cube state
           const sliceMove = this.currentAnimation.move;
           const dualFaceMoves = this.sliceToFaceMoves(sliceMove, orientation);
           this.cube.move(dualFaceMoves[0]);
           this.cube.move(dualFaceMoves[1]);
-        } else if (!this.currentAnimation.isReorientationMove) {
+        } else if (this.currentAnimation.kind === 'simple') {
           // Apply single face moves (reorientation moves don't change cube state)
           this.cube.move(this.currentAnimation.move);
         }
         
         // If this was a reorientation move, update stored orientations in remaining queue entries
-        if (this.currentAnimation.isReorientationMove) {
+        if (this.currentAnimation.kind === 'reorientation' || this.currentAnimation.kind === 'slice') {
           this.updateQueueOrientations();
         }
         
