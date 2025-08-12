@@ -439,7 +439,7 @@
       }
 
       function parseMoveSequence(sequence) {
-        const cleanSequence = sequence.replace(/\s/g, '');
+        const cleanSequence = sequence.replace(/\s|\(|\)/g, '');
         const moves = [];
         const invalidChars = [];
 
@@ -621,12 +621,14 @@
           if (e.target.value === 'fast') {
             renderer.animationDuration = 100;
           } else if (e.target.value === 'slow') {
-            renderer.animationDuration = 300;
+            renderer.animationDuration = 600;
           }
         });
       });
 
       document.addEventListener('keydown', e => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
         const activeElement = document.activeElement;
         if (activeElement && (
           activeElement.tagName === 'INPUT' ||
