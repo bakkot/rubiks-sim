@@ -20,7 +20,7 @@ export class CubeRenderer {
   }
 
   // Map visual face positions to logical faces based on current rotation
-  getVisualToLogicalMapping() {
+  getVisualToLogicalMapping(orientation = this.orientation) {
     const faceNormals = {
       U: [0, -1, 0], // Up face points down in our coordinate system
       D: [0, 1, 0], // Down face points up
@@ -47,8 +47,8 @@ export class CubeRenderer {
 
         // Check each logical face
         Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
-          // Transform the logical face normal by the current orientation
-          const transformedNormal = vec3_transformQuat(normal, this.orientation);
+          // Transform the logical face normal by the provided orientation
+          const transformedNormal = vec3_transformQuat(normal, orientation);
 
           // Calculate dot product to find how aligned they are
           const dot =
@@ -69,8 +69,8 @@ export class CubeRenderer {
   }
 
   // Convert visual move notation to logical move notation
-  visualMoveToLogical(visualMove) {
-    const mapping = this.getVisualToLogicalMapping();
+  visualMoveToLogical(visualMove, orientation = this.orientation) {
+    const mapping = this.getVisualToLogicalMapping(orientation);
     const isPrime = visualMove.includes("'");
     const baseFace = visualMove[0];
 
@@ -139,7 +139,7 @@ export class CubeRenderer {
       throw new Error(`unknown simple move ${move}`);
     }
     return new Promise(resolve => {
-      this.animationQueue.push({ move, resolve });
+      this.animationQueue.push({ move, resolve, orientation: [...this.orientation] });
       if (!this.animating) {
         this.processAnimationQueue();
       }
@@ -155,6 +155,7 @@ export class CubeRenderer {
         move,
         resolve,
         isReorientationMove: true,
+        orientation: [...this.orientation],
       });
       if (!this.animating) {
         this.processAnimationQueue();
@@ -190,6 +191,7 @@ export class CubeRenderer {
         isSliceMove: true,
         isReorientationMove: true,
         reorientationMove,
+        orientation: [...this.orientation],
       });
       if (!this.animating) {
         this.processAnimationQueue();
@@ -205,14 +207,14 @@ export class CubeRenderer {
     }
 
     this.animating = true;
-    const { move, resolve, isSliceMove, isReorientationMove, reorientationMove } = this.animationQueue.shift();
+    const { move, resolve, isSliceMove, isReorientationMove, reorientationMove, orientation } = this.animationQueue.shift();
 
     let processedMove = move;
     if (!isSliceMove && !isReorientationMove) {
-      processedMove = this.visualMoveToLogical(move);
+      processedMove = this.visualMoveToLogical(move, orientation);
     }
 
-    this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), isSliceMove, isReorientationMove };
+    this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), isSliceMove, isReorientationMove, reorientationMove, storedOrientation: orientation };
 
     // For reorientation moves, set up the rotation data
     let reorientationData = null;
@@ -240,13 +242,19 @@ export class CubeRenderer {
         if (this.currentAnimation.isSliceMove) {
           // Convert slice moves back to dual face moves for cube state
           const sliceMove = this.currentAnimation.move;
-          const dualFaceMoves = this.sliceToFaceMoves(sliceMove);
+          const dualFaceMoves = this.sliceToFaceMoves(sliceMove, orientation);
           this.cube.move(dualFaceMoves[0]);
           this.cube.move(dualFaceMoves[1]);
         } else if (!this.currentAnimation.isReorientationMove) {
           // Apply single face moves (reorientation moves don't change cube state)
           this.cube.move(this.currentAnimation.move);
         }
+        
+        // If this was a reorientation move, update stored orientations in remaining queue entries
+        if (this.currentAnimation.isReorientationMove) {
+          this.updateQueueOrientations();
+        }
+        
         // Note: Reorientation moves don't change cube state, only visual orientation
         // Final orientation is already set by updateReorientationAnimation
         this.animationProgress = 0;
@@ -260,7 +268,7 @@ export class CubeRenderer {
     animate();
   }
 
-  sliceToFaceMoves(sliceMove) {
+  sliceToFaceMoves(sliceMove, orientation = this.orientation) {
     // Convert slice moves to visual dual face moves
     const sliceToFaceMap = {
       M: ['R', "L'"], // M = R+L'
@@ -276,8 +284,8 @@ export class CubeRenderer {
       throw new Error(`Unknown slice move: ${sliceMove}`);
     }
 
-    // Convert to logical moves based on current orientation
-    return [this.visualMoveToLogical(moves[0]), this.visualMoveToLogical(moves[1])];
+    // Convert to logical moves based on provided orientation
+    return [this.visualMoveToLogical(moves[0], orientation), this.visualMoveToLogical(moves[1], orientation)];
   }
 
   setupReorientationAnimation(move) {
@@ -315,6 +323,8 @@ export class CubeRenderer {
         const bNormal = this.getFaceNormal(bFace);
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
+      default:
+        throw new Error(`not an axis: ${baseFace}`);
     }
 
     // Normalize the axis
@@ -343,6 +353,22 @@ export class CubeRenderer {
     this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
+  // Update stored orientations in queue after reorientation move
+  updateQueueOrientations() {
+    console.log(this.currentAnimation);
+    const { reorientationMove, move } = this.currentAnimation;
+    const moveToUse = reorientationMove || move;
+    
+    // Calculate the rotation that was just applied
+    const reorientationData = this.setupReorientationAnimation(moveToUse);
+    const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
+    
+    // Update all remaining queue entries
+    this.animationQueue.forEach(queueEntry => {
+      queueEntry.orientation = quat_normalize(quat_multiply(rotationQuat, queueEntry.orientation));
+    });
+  }
+
   getRotationMatrix(axis, angle) {
     const c = Math.cos(angle);
     const s = Math.sin(angle);
@@ -368,9 +394,9 @@ export class CubeRenderer {
     }
   }
 
-  getAnimationRotation(move, piecePosition) {
+  getAnimationRotation(move, piecePosition, storedOrientation = this.orientation) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
-      const faceMoves = this.sliceToFaceMoves(move);
+      const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
       if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
         return this.getAnimationRotationForSingleMove(faceMoves[0]);
       } else if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
@@ -403,13 +429,13 @@ export class CubeRenderer {
     return this.getRotationMatrix(axis, angle);
   }
 
-  isPieceAffectedByMove(pieceType, piecePos, move) {
+  isPieceAffectedByMove(pieceType, piecePos, move, storedOrientation = this.orientation) {
     if (['x', 'y', 'z'].includes(move[0])) {
       return false;
     }
 
     if (['M', 'E', 'S'].includes(move[0])) {
-      const faceMoves = this.sliceToFaceMoves(move);
+      const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
       return (
         this.isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
         this.isPieceAffectedBySingleMove(piecePos, faceMoves[1])
@@ -436,7 +462,7 @@ export class CubeRenderer {
     if (applyAnimation && this.currentAnimation) {
       const move = this.currentAnimation.move;
 
-      const rotation = this.getAnimationRotation(move, piecePosition);
+      const rotation = this.getAnimationRotation(move, piecePosition, this.currentAnimation.storedOrientation);
       if (rotation) {
         const newX = rotation.x(x, y, z);
         const newY = rotation.y(x, y, z);
@@ -542,7 +568,7 @@ export class CubeRenderer {
       const size = 0.333; // 1/3 of cube edge
       const faceDistance = 1.01; // Slightly outside the cube center
       const shouldAnimate =
-        this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move);
+        this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
       const corners = [
         this.project3D(
@@ -612,7 +638,7 @@ export class CubeRenderer {
         const size = 0.333; // 1/3 of cube edge
         const faceDistance = 1.01; // Slightly outside the cube center
         const shouldAnimate =
-          this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move);
+          this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -705,7 +731,7 @@ export class CubeRenderer {
         const size = 0.333;
         const faceDistance = 1.01;
         const shouldAnimate =
-          this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move);
+          this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
