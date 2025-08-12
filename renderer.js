@@ -225,7 +225,9 @@ export class CubeRenderer {
     
     // Compute move properties
     const kind = this.getMoveKind(move);
-    const reorientationMove = kind === 'slice' ? this.getSliceReorientationMove(move) : null;
+    const reorientationMove = this.includesReorientation(kind) 
+      ? (kind === 'slice' ? this.getSliceReorientationMove(move) : move)
+      : null;
 
     let processedMove = move;
     if (kind === 'simple') {
@@ -237,8 +239,7 @@ export class CubeRenderer {
     // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
     if (this.includesReorientation(kind)) {
-      const moveToUse = reorientationMove || move; // Use reorientationMove for slice moves
-      reorientationData = this.setupReorientationAnimation(moveToUse, orientation);
+      reorientationData = this.setupReorientationAnimation(reorientationMove, orientation);
     }
 
     const animate = () => {
@@ -373,11 +374,10 @@ export class CubeRenderer {
 
   // Update stored orientations in queue after reorientation move
   updateQueueOrientations() {
-    const { reorientationMove, move } = this.currentAnimation;
-    const moveToUse = reorientationMove || move;
+    const { reorientationMove } = this.currentAnimation;
     
     // Calculate the rotation that was just applied
-    const reorientationData = this.setupReorientationAnimation(moveToUse, this.currentAnimation.storedOrientation);
+    const reorientationData = this.setupReorientationAnimation(reorientationMove, this.currentAnimation.storedOrientation);
     const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
     
     // Update all remaining queue entries
