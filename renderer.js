@@ -11,7 +11,7 @@ export class CubeRenderer {
   }
 
   reset() {
-    this.orientation = [0.0991, 0.7921, 0.099, 0.5941];
+    this.orientation = [0.14000166646724985, 0.14000166646724985, 0, 0.9802035843501011];
     this.animating = false;
     this.animationQueue = [];
     this.animationProgress = 0;
