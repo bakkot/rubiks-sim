@@ -767,79 +767,14 @@
         // Reorientation moves - these update the cube's visual orientation
         animateReorientationMove(move) {
           return new Promise(resolve => {
-            const isPrime = move.includes("'");
-            const baseFace = move.charAt(0);
-            const mapping = this.getVisualToLogicalMapping();
-            
-            let axis;
-            let direction = isPrime ? -1 : 1;
-            
-            // Determine the rotation axis based on current orientation
-            switch (baseFace) {
-              case 'x':
-                // Rotate around R-L axis (current visual right to left)
-                const rFace = mapping.visualRight;
-                const lFace = mapping.visualLeft;
-                // Get the axis by finding the vector between R and L face normals
-                const rNormal = this.getFaceNormal(rFace);
-                const lNormal = this.getFaceNormal(lFace);
-                axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
-                break;
-              case 'y':
-                // Rotate around U-D axis (current visual up to down)
-                const uFace = mapping.visualUp;
-                const dFace = mapping.visualDown;
-                const uNormal = this.getFaceNormal(uFace);
-                const dNormal = this.getFaceNormal(dFace);
-                axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
-                break;
-              case 'z':
-                // Rotate around F-B axis (current visual front to back)
-                const fFace = mapping.visualFront;
-                const bFace = mapping.visualBack;
-                const fNormal = this.getFaceNormal(fFace);
-                const bNormal = this.getFaceNormal(bFace);
-                axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
-                break;
+            this.animationQueue.push({ 
+              move, 
+              resolve,
+              isReorientationMove: true 
+            });
+            if (!this.animating) {
+              this.processAnimationQueue();
             }
-            
-            // Normalize the axis
-            const axisLength = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
-            axis[0] /= axisLength;
-            axis[1] /= axisLength;
-            axis[2] /= axisLength;
-            
-            // Create smooth rotation animation
-            const totalRotation = direction * Math.PI / 2; // 90 degrees
-            const duration = 300; // milliseconds
-            const startTime = Date.now();
-            const startOrientation = [...this.orientation];
-            
-            const animate = () => {
-              const elapsed = Date.now() - startTime;
-              const progress = Math.min(elapsed / duration, 1);
-              
-              // Use easing for smoother animation
-              const easeProgress = 0.5 * (1 - Math.cos(progress * Math.PI));
-              const currentAngle = totalRotation * easeProgress;
-              
-              // Create rotation quaternion for current progress
-              const rotationQuat = Math3D.quat_fromAxisAngle(Math3D.quat_create(), axis, currentAngle);
-              
-              // Apply rotation to starting orientation
-              Math3D.quat_multiply(this.orientation, rotationQuat, startOrientation);
-              Math3D.quat_normalize(this.orientation, this.orientation);
-              
-              this.render();
-              
-              if (progress < 1) {
-                requestAnimationFrame(animate);
-              } else {
-                resolve();
-              }
-            };
-            
-            animate();
           });
         }
         
@@ -916,12 +851,23 @@
           }
 
           this.animating = true;
-          const { move, resolve, isDualMove } = this.animationQueue.shift();
-          this.currentAnimation = { move, resolve, startTime: Date.now(), isDualMove };
+          const { move, resolve, isDualMove, isReorientationMove } = this.animationQueue.shift();
+          this.currentAnimation = { move, resolve, startTime: Date.now(), isDualMove, isReorientationMove };
+
+          // For reorientation moves, set up the rotation data
+          let reorientationData = null;
+          if (isReorientationMove) {
+            reorientationData = this.setupReorientationAnimation(move);
+          }
 
           const animate = () => {
             const elapsed = Date.now() - this.currentAnimation.startTime;
             this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
+
+            // Handle reorientation animation
+            if (this.currentAnimation.isReorientationMove) {
+              this.updateReorientationAnimation(reorientationData, this.animationProgress);
+            }
 
             this.render();
 
@@ -929,7 +875,10 @@
               requestAnimationFrame(animate);
             } else {
               // Apply the actual move(s) to the cube state
-              if (this.currentAnimation.isDualMove) {
+              if (this.currentAnimation.isReorientationMove) {
+                // Reorientation moves don't change cube state, only visual orientation
+                // Final orientation is already set by updateReorientationAnimation
+              } else if (this.currentAnimation.isDualMove) {
                 const [move1, move2] = this.currentAnimation.move.split('+');
                 this.cube.move(move1);
                 this.cube.move(move2);
@@ -945,6 +894,72 @@
           };
 
           animate();
+        }
+
+        setupReorientationAnimation(move) {
+          const isPrime = move.includes("'");
+          const baseFace = move.charAt(0);
+          const mapping = this.getVisualToLogicalMapping();
+          
+          let axis;
+          let direction = isPrime ? -1 : 1;
+          
+          // Determine the rotation axis based on current orientation
+          switch (baseFace) {
+            case 'x':
+              // Rotate around R-L axis (current visual right to left)
+              const rFace = mapping.visualRight;
+              const lFace = mapping.visualLeft;
+              // Get the axis by finding the vector between R and L face normals
+              const rNormal = this.getFaceNormal(rFace);
+              const lNormal = this.getFaceNormal(lFace);
+              axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
+              break;
+            case 'y':
+              // Rotate around U-D axis (current visual up to down)
+              const uFace = mapping.visualUp;
+              const dFace = mapping.visualDown;
+              const uNormal = this.getFaceNormal(uFace);
+              const dNormal = this.getFaceNormal(dFace);
+              axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
+              break;
+            case 'z':
+              // Rotate around F-B axis (current visual front to back)
+              const fFace = mapping.visualFront;
+              const bFace = mapping.visualBack;
+              const fNormal = this.getFaceNormal(fFace);
+              const bNormal = this.getFaceNormal(bFace);
+              axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
+              break;
+          }
+          
+          // Normalize the axis
+          const axisLength = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+          axis[0] /= axisLength;
+          axis[1] /= axisLength;
+          axis[2] /= axisLength;
+          
+          // Return reorientation animation data
+          return {
+            axis,
+            totalRotation: direction * Math.PI / 2, // 90 degrees
+            startOrientation: [...this.orientation]
+          };
+        }
+
+        updateReorientationAnimation(reorientationData, animationProgress) {
+          const { axis, totalRotation, startOrientation } = reorientationData;
+          
+          // Use easing for smoother animation
+          const easeProgress = 0.5 * (1 - Math.cos(animationProgress * Math.PI));
+          const currentAngle = totalRotation * easeProgress;
+          
+          // Create rotation quaternion for current progress
+          const rotationQuat = Math3D.quat_fromAxisAngle(Math3D.quat_create(), axis, currentAngle);
+          
+          // Apply rotation to starting orientation
+          Math3D.quat_multiply(this.orientation, rotationQuat, startOrientation);
+          Math3D.quat_normalize(this.orientation, this.orientation);
         }
 
         getRotationMatrix(axis, angle) {
