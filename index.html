@@ -471,7 +471,7 @@
       }
 
       function parseMoveSequence(sequence) {
-        const cleanSequence = sequence.replace(/\s|\(|\)/g, '');
+        const cleanSequence = sequence.replace(/\s|\(|\)/g, '').replace(/[XYZ]/g, m => m.toLowerCase());
         const moves = [];
         const invalidChars = [];
 
