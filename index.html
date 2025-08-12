@@ -399,6 +399,27 @@
           }
         }
 
+        // Check if the cube is in solved state
+        isSolved() {
+          // Check if all corners are in correct positions with correct orientation
+          for (let i = 0; i < this.corners.length; i++) {
+            const corner = this.corners[i];
+            if (corner.id !== i || corner.orientation !== 0) {
+              return false;
+            }
+          }
+          
+          // Check if all edges are in correct positions with correct orientation
+          for (let i = 0; i < this.edges.length; i++) {
+            const edge = this.edges[i];
+            if (edge.id !== i || edge.orientation !== 0) {
+              return false;
+            }
+          }
+          
+          return true;
+        }
+
         // Face moves
         U() {
           this.cyclePieces(this.corners, [0, 1, 2, 3], 0);
@@ -856,6 +877,7 @@
         processAnimationQueue() {
           if (this.animationQueue.length === 0) {
             this.animating = false;
+            this.render(); // Re-render to show solved indicator if applicable
             return;
           }
 
@@ -1418,6 +1440,38 @@
           stickers.forEach(sticker => {
             this.drawSticker(sticker.corners, sticker.color);
           });
+
+          // Draw solved indicator if cube is solved and no animations are running
+          if (!this.animating && this.cube.isSolved()) {
+            this.drawSolvedIndicator();
+          }
+        }
+
+        drawSolvedIndicator() {
+          const size = 30;
+          const x = this.canvas.width - size - 10;
+          const y = this.canvas.height - size - 10;
+
+          // Draw green circle background
+          this.ctx.beginPath();
+          this.ctx.arc(x + size/2, y + size/2, size/2, 0, 2 * Math.PI);
+          this.ctx.fillStyle = '#4CAF50';
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#2E7D32';
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
+
+          // Draw white checkmark
+          this.ctx.strokeStyle = 'white';
+          this.ctx.lineWidth = 3;
+          this.ctx.lineCap = 'round';
+          this.ctx.lineJoin = 'round';
+          
+          this.ctx.beginPath();
+          this.ctx.moveTo(x + size * 0.25, y + size * 0.5);
+          this.ctx.lineTo(x + size * 0.45, y + size * 0.7);
+          this.ctx.lineTo(x + size * 0.75, y + size * 0.3);
+          this.ctx.stroke();
         }
       }
 
@@ -1500,7 +1554,7 @@
 
       function resetCube() {
         cube.reset();
-        renderer.render();
+        renderer.render(); // Will show checkmark since cube is now solved
       }
 
       // Reset orientation function
