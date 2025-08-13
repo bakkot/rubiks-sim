@@ -1,6 +1,5 @@
 import { vec3_transformQuat, quat_fromAxisAngle, quat_multiply, quat_normalize } from './3d-math.js';
 
-// Determine the kind of move
 function getMoveKind(move) {
   const baseFace = move[0];
   const moveKinds = {
@@ -31,12 +30,10 @@ function getMoveKind(move) {
   return kind;
 }
 
-// Check if a move kind includes reorientation (reorientation, slice, or double)
 function includesReorientation(kind) {
   return kind === 'reorientation' || kind === 'slice' || kind === 'double';
 }
 
-// Get the reorientation move for slice moves
 function getSliceReorientationMove(sliceMove) {
   const sliceToReorientationMap = {
     M: "x'",
@@ -50,7 +47,6 @@ function getSliceReorientationMove(sliceMove) {
   return sliceToReorientationMap[sliceMove];
 }
 
-// Get the reorientation move for double moves
 function getDoubleReorientationMove(doubleMove) {
   const baseFace = doubleMove[0];
   const isPrime = doubleMove.includes("'");
@@ -67,7 +63,6 @@ function getDoubleReorientationMove(doubleMove) {
   return doubleToReorientationMap[baseFace];
 }
 
-// Get the face move for double moves
 function getDoubleFaceMove(doubleMove) {
   const baseFace = doubleMove[0];
   const isPrime = doubleMove.includes("'");
@@ -84,7 +79,6 @@ function getDoubleFaceMove(doubleMove) {
   return doubleToFaceMap[baseFace];
 }
 
-// Create rotation matrix for animation
 function getRotationMatrix(axis, angle) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
@@ -110,7 +104,6 @@ function getRotationMatrix(axis, angle) {
   }
 }
 
-// Map visual face positions to logical faces based on orientation
 function getVisualToLogicalMapping(orientation) {
   const faceNormals = {
     U: [0, -1, 0], // Up face points down in our coordinate system
@@ -136,9 +129,7 @@ function getVisualToLogicalMapping(orientation) {
       let bestMatch = null;
       let bestDot = -2; // Start with impossible dot product value
 
-      // Check each logical face
       Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
-        // Transform the logical face normal by the provided orientation
         const transformedNormal = vec3_transformQuat(normal, orientation);
 
         // Calculate dot product to find how aligned they are
@@ -147,7 +138,6 @@ function getVisualToLogicalMapping(orientation) {
           transformedNormal[1] * visualDir[1] +
           transformedNormal[2] * visualDir[2];
 
-        // Keep track of the best match
         if (dot > bestDot) {
           bestDot = dot;
           bestMatch = logicalFace;
@@ -159,7 +149,6 @@ function getVisualToLogicalMapping(orientation) {
   );
 }
 
-// Get face normal in world space
 function getFaceNormal(logicalFace, orientation) {
   const faceNormals = {
     U: [0, -1, 0],
@@ -175,7 +164,6 @@ function getFaceNormal(logicalFace, orientation) {
   return transformedNormal;
 }
 
-// Convert visual move notation to logical move notation
 function visualMoveToLogical(visualMove, orientation) {
   const mapping = getVisualToLogicalMapping(orientation);
   const isPrime = visualMove.includes("'");
@@ -208,9 +196,7 @@ function visualMoveToLogical(visualMove, orientation) {
   return logicalFace + (isPrime ? "'" : '');
 }
 
-// Convert slice moves to dual logical face moves
 function sliceToFaceMoves(sliceMove, orientation) {
-  // Convert slice moves to visual dual face moves
   const sliceToFaceMap = {
     M: ['R', "L'"], // M = R+L'
     "M'": ["R'", 'L'], // M' = R'+L
@@ -225,17 +211,14 @@ function sliceToFaceMoves(sliceMove, orientation) {
     throw new Error(`Unknown slice move: ${sliceMove}`);
   }
 
-  // Convert to logical moves based on provided orientation
   return [visualMoveToLogical(moves[0], orientation), visualMoveToLogical(moves[1], orientation)];
 }
 
-// Convert double moves to their single logical face move
 function doubleToFaceMove(doubleMove, orientation) {
   const faceMove = getDoubleFaceMove(doubleMove);
   return visualMoveToLogical(faceMove, orientation);
 }
 
-// Check if a piece is affected by any type of move
 function isPieceAffectedByMove(pieceType, piecePos, move, orientation) {
   if (['x', 'y', 'z'].includes(move[0])) {
     return false;
@@ -254,7 +237,6 @@ function isPieceAffectedByMove(pieceType, piecePos, move, orientation) {
   return isPieceAffectedBySingleMove(piecePos, move);
 }
 
-// Check if a piece is affected by a single move
 function isPieceAffectedBySingleMove(piecePos, move) {
   const face = move[0];
 
@@ -364,7 +346,6 @@ export class CubeRenderer {
     this.animating = true;
     const { move, resolve, orientation } = this.animationQueue.shift();
 
-    // Compute move properties
     const kind = getMoveKind(move);
     let reorientationMove = null;
     if (includesReorientation(kind)) {
@@ -391,7 +372,6 @@ export class CubeRenderer {
       initialOrientation: orientation,
     };
 
-    // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
     if (includesReorientation(kind)) {
       reorientationData = this.setupReorientationAnimation(reorientationMove, orientation);
@@ -402,7 +382,6 @@ export class CubeRenderer {
       const elapsed = Date.now() - this.currentAnimation.startTime;
       this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
-      // Handle reorientation animation
       if (includesReorientation(this.currentAnimation.kind)) {
         this.updateReorientationAnimation(reorientationData, this.animationProgress);
       }
@@ -414,22 +393,18 @@ export class CubeRenderer {
       } else {
         // Apply the actual move(s) to the cube state
         if (this.currentAnimation.kind === 'slice') {
-          // Convert slice moves back to dual face moves for cube state
           const sliceMove = this.currentAnimation.move;
           const dualFaceMoves = sliceToFaceMoves(sliceMove, orientation);
           this.cube.move(dualFaceMoves[0]);
           this.cube.move(dualFaceMoves[1]);
         } else if (this.currentAnimation.kind === 'double') {
-          // Apply the single face move for double moves
           const doubleMove = this.currentAnimation.move;
           const faceMove = doubleToFaceMove(doubleMove, orientation);
           this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
-          // Apply single face moves (reorientation moves don't change cube state)
           this.cube.move(this.currentAnimation.move);
         }
 
-        // If this was a reorientation move, update stored orientations in remaining queue entries
         if (includesReorientation(this.currentAnimation.kind)) {
           this.updateQueueOrientations();
         }
@@ -492,7 +467,6 @@ export class CubeRenderer {
     axis[1] /= axisLength;
     axis[2] /= axisLength;
 
-    // Return reorientation animation data
     return {
       axis,
       totalRotation: (direction * Math.PI) / 2, // 90 degrees
