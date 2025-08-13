@@ -461,16 +461,6 @@ export class CubeRenderer {
     const { move, resolve, orientation } = this.animationQueue.shift();
 
     const kind = getMoveKind(move);
-    let reorientationMove = null;
-    if (includesReorientation(kind)) {
-      if (kind === 'slice') {
-        reorientationMove = sliceToReorientationMove(move);
-      } else if (kind === 'double') {
-        reorientationMove = doubleToReorientationMove(move);
-      } else {
-        reorientationMove = move; // reorientation kind
-      }
-    }
 
     const startTime = Date.now();
     const currentAnimation = {
@@ -482,6 +472,15 @@ export class CubeRenderer {
 
     let reorientationData = null;
     if (includesReorientation(kind)) {
+      let reorientationMove = null;
+      if (kind === 'slice') {
+        reorientationMove = sliceToReorientationMove(move);
+      } else if (kind === 'double') {
+        reorientationMove = doubleToReorientationMove(move);
+      } else {
+        reorientationMove = move; // reorientation kind
+      }
+
       const logicalReorientationMove = visualReorientationToLogical(reorientationMove, orientation);
       reorientationData = this.setupReorientationAnimation(logicalReorientationMove);
     }
