@@ -63,7 +63,7 @@ function getDoubleReorientationMove(doubleMove) {
   return doubleToReorientationMap[baseFace];
 }
 
-function getDoubleFaceMove(doubleMove) {
+function doubleToFaceMove(doubleMove) {
   const baseFace = doubleMove[0];
   const isPrime = doubleMove.includes("'");
 
@@ -196,7 +196,7 @@ function visualMoveToLogical(visualMove, orientation) {
   return logicalFace + (isPrime ? "'" : '');
 }
 
-function sliceToFaceMoves(sliceMove, orientation) {
+function sliceToFaceMoves(sliceMove) {
   const sliceToFaceMap = {
     M: ['R', "L'"], // M = R+L'
     "M'": ["R'", 'L'], // M' = R'+L
@@ -210,14 +210,9 @@ function sliceToFaceMoves(sliceMove, orientation) {
   if (!moves) {
     throw new Error(`Unknown slice move: ${sliceMove}`);
   }
-
-  return [visualMoveToLogical(moves[0], orientation), visualMoveToLogical(moves[1], orientation)];
+  return moves;
 }
 
-function doubleToFaceMove(doubleMove, orientation) {
-  const faceMove = getDoubleFaceMove(doubleMove);
-  return visualMoveToLogical(faceMove, orientation);
-}
 
 function isPieceAffectedByMove(piecePos, move, orientation) {
   // TODO use kind
@@ -226,17 +221,18 @@ function isPieceAffectedByMove(piecePos, move, orientation) {
   }
 
   if (['M', 'E', 'S'].includes(move[0])) {
-    const faceMoves = sliceToFaceMoves(move, orientation);
-    return isPieceAffectedBySingleMove(piecePos, faceMoves[0]) || isPieceAffectedBySingleMove(piecePos, faceMoves[1]);
+    const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
+    return isPieceAffectedBySingleMove(piecePos, logicalMoves[0]) || isPieceAffectedBySingleMove(piecePos, logicalMoves[1]);
   }
 
   if (['r', 'l', 'u', 'd', 'f', 'b'].includes(move[0])) {
-    const faceMove = doubleToFaceMove(move, orientation);
-    return isPieceAffectedBySingleMove(piecePos, faceMove);
+    const faceMove = doubleToFaceMove(move);
+    const logicalMove = visualMoveToLogical(faceMove, orientation);
+    return isPieceAffectedBySingleMove(piecePos, logicalMove);
   }
 
-  move = visualMoveToLogical(move, orientation);
-  return isPieceAffectedBySingleMove(piecePos, move);
+  const logicalMove = visualMoveToLogical(move, orientation);
+  return isPieceAffectedBySingleMove(piecePos, logicalMove);
 }
 
 function isPieceAffectedBySingleMove(piecePos, move) {
@@ -391,13 +387,13 @@ export class CubeRenderer {
         // Apply the actual move(s) to the cube state
         if (this.currentAnimation.kind === 'slice') {
           const sliceMove = this.currentAnimation.move;
-          const dualFaceMoves = sliceToFaceMoves(sliceMove, orientation);
-          this.cube.move(dualFaceMoves[0]);
-          this.cube.move(dualFaceMoves[1]);
+          const logicalMoves = sliceToFaceMoves(sliceMove).map(m => visualMoveToLogical(m, orientation));
+          this.cube.move(logicalMoves[0]);
+          this.cube.move(logicalMoves[1]);
         } else if (this.currentAnimation.kind === 'double') {
-          const doubleMove = this.currentAnimation.move;
-          const faceMove = doubleToFaceMove(doubleMove, orientation);
-          this.cube.move(faceMove);
+          const faceMove = doubleToFaceMove(this.currentAnimation.move);
+          const logicalMove = visualMoveToLogical(faceMove, orientation);
+          this.cube.move(logicalMove);
         } else if (this.currentAnimation.kind === 'simple') {
           const logicalMove = visualMoveToLogical(this.currentAnimation.move, orientation);
           this.cube.move(logicalMove);
@@ -493,26 +489,28 @@ export class CubeRenderer {
   getAnimationRotation(move, piecePosition, orientation) {
     // TODO use kind
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
-      const faceMoves = sliceToFaceMoves(move, orientation);
-      if (isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
-        return this.getAnimationRotationForSingleMove(faceMoves[0]);
-      } else if (isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
-        return this.getAnimationRotationForSingleMove(faceMoves[1]);
+      const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
+      if (isPieceAffectedBySingleMove(piecePosition, logicalMoves[0])) {
+        return this.getAnimationRotationForSingleMove(logicalMoves[0]);
+      } else if (isPieceAffectedBySingleMove(piecePosition, logicalMoves[1])) {
+        return this.getAnimationRotationForSingleMove(logicalMoves[1]);
       }
       return null;
     }
 
     if (['r', "r'", 'l', "l'", 'u', "u'", 'd', "d'", 'f', "f'", 'b', "b'"].includes(move)) {
-      const faceMove = doubleToFaceMove(move, orientation);
-      if (isPieceAffectedBySingleMove(piecePosition, faceMove)) {
-        return this.getAnimationRotationForSingleMove(faceMove);
+      const faceMove = doubleToFaceMove(move);
+      const logicalMove = visualMoveToLogical(faceMove, orientation);
+
+      if (isPieceAffectedBySingleMove(piecePosition, logicalMove)) {
+        return this.getAnimationRotationForSingleMove(logicalMove);
       }
       return null;
     }
 
-    move = visualMoveToLogical(move, orientation);
-    if (isPieceAffectedBySingleMove(piecePosition, move)) {
-      return this.getAnimationRotationForSingleMove(move);
+    const logicalMove = visualMoveToLogical(move, orientation);
+    if (isPieceAffectedBySingleMove(piecePosition, logicalMove)) {
+      return this.getAnimationRotationForSingleMove(logicalMove);
     }
     return null;
   }
