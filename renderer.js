@@ -465,7 +465,7 @@ export class CubeRenderer {
 
     const startTime = Date.now();
     const currentAnimation = {
-      move,
+      logicalMove,
       animationProgress: 0,
       initialOrientation: orientation,
     };
@@ -501,15 +501,13 @@ export class CubeRenderer {
       } else {
         // Apply the actual move(s) to the cube state
         if (kind === 'slice') {
-          const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
-          this.cube.move(logicalMoves[0]);
-          this.cube.move(logicalMoves[1]);
+          const faceMoves = sliceToFaceMoves(logicalMove);
+          this.cube.move(faceMoves[0]);
+          this.cube.move(faceMoves[1]);
         } else if (kind === 'double') {
-          const faceMove = doubleToFaceMove(move);
-          const logicalMove = visualMoveToLogical(faceMove, orientation);
-          this.cube.move(logicalMove);
+          const faceMove = doubleToFaceMove(logicalMove);
+          this.cube.move(faceMove);
         } else if (kind === 'simple') {
-          const logicalMove = visualMoveToLogical(move, orientation);
           this.cube.move(logicalMove);
         }
 
@@ -591,12 +589,11 @@ export class CubeRenderer {
     this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
-  getFaceTurnAnimationRotation(move, piecePosition, orientation) {
-    const kind = getMoveKind(move);
+  getFaceTurnAnimationRotation(logicalMove, piecePosition, orientation) {
+    const kind = getMoveKind(logicalMove);
 
     switch (kind) {
       case 'simple': {
-        const logicalMove = visualMoveToLogical(move, orientation);
         if (isPieceAffectedByFaceTurn(piecePosition, logicalMove)) {
           return this.getFaceTurnAnimationRotationForSingleMove(logicalMove);
         }
@@ -605,7 +602,7 @@ export class CubeRenderer {
         return null;
       }
       case 'slice': {
-        const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
+        const logicalMoves = sliceToFaceMoves(logicalMove);
         if (isPieceAffectedByFaceTurn(piecePosition, logicalMoves[0])) {
           return this.getFaceTurnAnimationRotationForSingleMove(logicalMoves[0]);
         } else if (isPieceAffectedByFaceTurn(piecePosition, logicalMoves[1])) {
@@ -614,11 +611,9 @@ export class CubeRenderer {
         return null;
       }
       case 'double': {
-        const faceMove = doubleToFaceMove(move);
-        const logicalMove = visualMoveToLogical(faceMove, orientation);
-
-        if (isPieceAffectedByFaceTurn(piecePosition, logicalMove)) {
-          return this.getFaceTurnAnimationRotationForSingleMove(logicalMove);
+        const faceMove = doubleToFaceMove(logicalMove);
+        if (isPieceAffectedByFaceTurn(piecePosition, faceMove)) {
+          return this.getFaceTurnAnimationRotationForSingleMove(faceMove);
         }
         return null;
       }
@@ -651,7 +646,7 @@ export class CubeRenderer {
 
   project3D(x, y, z, piecePosition) {
     if (this.currentAnimation) {
-      const rotation = this.getFaceTurnAnimationRotation(this.currentAnimation.move, piecePosition, this.currentAnimation.initialOrientation);
+      const rotation = this.getFaceTurnAnimationRotation(this.currentAnimation.logicalMove, piecePosition, this.currentAnimation.initialOrientation);
       if (rotation) {
         const newX = rotation.x(x, y, z);
         const newY = rotation.y(x, y, z);
