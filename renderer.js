@@ -1,5 +1,131 @@
 import { vec3_transformQuat, quat_fromAxisAngle, quat_multiply, quat_normalize } from './3d-math.js';
 
+// Utility functions for move analysis and geometry
+
+// Determine the kind of move
+function getMoveKind(move) {
+  const baseFace = move[0];
+  const moveKinds = {
+    'U': 'simple',
+    'D': 'simple',
+    'R': 'simple',
+    'L': 'simple',
+    'F': 'simple',
+    'B': 'simple',
+    'x': 'reorientation',
+    'y': 'reorientation', 
+    'z': 'reorientation',
+    'M': 'slice',
+    'E': 'slice',
+    'S': 'slice',
+    'r': 'double',
+    'l': 'double',
+    'u': 'double',
+    'd': 'double',
+    'f': 'double',
+    'b': 'double'
+  };
+  
+  const kind = moveKinds[baseFace];
+  if (!kind) {
+    throw new Error(`Unknown move: ${move}`);
+  }
+  return kind;
+}
+
+// Check if a move kind includes reorientation (reorientation, slice, or double)
+function includesReorientation(kind) {
+  return kind === 'reorientation' || kind === 'slice' || kind === 'double';
+}
+
+// Get the reorientation move for slice moves
+function getSliceReorientationMove(sliceMove) {
+  const sliceToReorientationMap = {
+    'M': "x'",
+    "M'": 'x',
+    'E': "y'",
+    "E'": 'y',
+    'S': 'z',
+    "S'": "z'",
+  };
+  
+  return sliceToReorientationMap[sliceMove];
+}
+
+// Get the reorientation move for double moves
+function getDoubleReorientationMove(doubleMove) {
+  const baseFace = doubleMove[0];
+  const isPrime = doubleMove.includes("'");
+  
+  const doubleToReorientationMap = {
+    'r': isPrime ? "x'" : 'x',
+    'l': isPrime ? 'x' : "x'",
+    'u': isPrime ? "y'" : 'y',
+    'd': isPrime ? 'y' : "y'",
+    'f': isPrime ? "z'" : "z",
+    'b': isPrime ? 'z' : "z'",
+  };
+  
+  return doubleToReorientationMap[baseFace];
+}
+
+// Get the face move for double moves
+function getDoubleFaceMove(doubleMove) {
+  const baseFace = doubleMove[0];
+  const isPrime = doubleMove.includes("'");
+  
+  const doubleToFaceMap = {
+    'r': isPrime ? "L'" : 'L',
+    'l': isPrime ? "R'" : 'R',
+    'u': isPrime ? "D'" : 'D',
+    'd': isPrime ? "U'" : 'U', 
+    'f': isPrime ? "B'" : 'B',
+    'b': isPrime ? "F'" : 'F'
+  };
+  
+  return doubleToFaceMap[baseFace];
+}
+
+// Create rotation matrix for animation
+function getRotationMatrix(axis, angle) {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+
+  if (axis === 'y') {
+    return {
+      x: (x, y, z) => x * c - z * s,
+      y: (x, y, z) => y,
+      z: (x, y, z) => x * s + z * c,
+    };
+  } else if (axis === 'x') {
+    return {
+      x: (x, y, z) => x,
+      y: (x, y, z) => y * c - z * s,
+      z: (x, y, z) => y * s + z * c,
+    };
+  } else if (axis === 'z') {
+    return {
+      x: (x, y, z) => x * c - y * s,
+      y: (x, y, z) => x * s + y * c,
+      z: (x, y, z) => z,
+    };
+  }
+}
+
+// Check if a piece is affected by a single move
+function isPieceAffectedBySingleMove(piecePos, move) {
+  const face = move[0];
+
+  if (face === 'U') return piecePos.y < -0.5;
+  if (face === 'D') return piecePos.y > 0.5;
+  if (face === 'R') return piecePos.x > 0.5;
+  if (face === 'L') return piecePos.x < -0.5;
+  if (face === 'F') return piecePos.z < -0.5;
+  if (face === 'B') return piecePos.z > 0.5;
+
+  throw new Error(`not a move: ${face}`);
+}
+
 export class CubeRenderer {
   constructor(canvas, cube) {
     this.canvas = canvas;
@@ -117,92 +243,13 @@ export class CubeRenderer {
     return transformedNormal;
   }
 
-  // Determine the kind of move
-  getMoveKind(move) {
-    const baseFace = move[0];
-    const moveKinds = {
-      'U': 'simple',
-      'D': 'simple',
-      'R': 'simple',
-      'L': 'simple',
-      'F': 'simple',
-      'B': 'simple',
-      'x': 'reorientation',
-      'y': 'reorientation', 
-      'z': 'reorientation',
-      'M': 'slice',
-      'E': 'slice',
-      'S': 'slice',
-      'r': 'double',
-      'l': 'double',
-      'u': 'double',
-      'd': 'double',
-      'f': 'double',
-      'b': 'double'
-    };
-    
-    const kind = moveKinds[baseFace];
-    if (!kind) {
-      throw new Error(`Unknown move: ${move}`);
-    }
-    return kind;
-  }
 
-  // Check if a move kind includes reorientation (reorientation, slice, or double)
-  includesReorientation(kind) {
-    return kind === 'reorientation' || kind === 'slice' || kind === 'double';
-  }
 
-  // Get the reorientation move for slice moves
-  getSliceReorientationMove(sliceMove) {
-    const sliceToReorientationMap = {
-      'M': "x'",
-      "M'": 'x',
-      'E': "y'",
-      "E'": 'y',
-      'S': 'z',
-      "S'": "z'",
-    };
-    
-    return sliceToReorientationMap[sliceMove];
-  }
 
-  // Get the reorientation and face move for double moves
-  getDoubleReorientationMove(doubleMove) {
-    const baseFace = doubleMove[0];
-    const isPrime = doubleMove.includes("'");
-    
-    const doubleToReorientationMap = {
-      'r': isPrime ? "x'" : 'x',
-      'l': isPrime ? 'x' : "x'",
-      'u': isPrime ? "y'" : 'y',
-      'd': isPrime ? 'y' : "y'",
-      'f': isPrime ? "z'" : "z",
-      'b': isPrime ? 'z' : "z'",
-    };
-    
-    return doubleToReorientationMap[baseFace];
-  }
 
-  // Get the face move for double moves
-  getDoubleFaceMove(doubleMove) {
-    const baseFace = doubleMove[0];
-    const isPrime = doubleMove.includes("'");
-    
-    const doubleToFaceMap = {
-      'r': isPrime ? "L'" : 'L',
-      'l': isPrime ? "R'" : 'R',
-      'u': isPrime ? "D'" : 'D',
-      'd': isPrime ? "U'" : 'U', 
-      'f': isPrime ? "B'" : 'B',
-      'b': isPrime ? "F'" : 'F'
-    };
-    
-    return doubleToFaceMap[baseFace];
-  }
 
   animateMove(move) {
-    const kind = this.getMoveKind(move);
+    const kind = getMoveKind(move);
 
     switch (kind) {
       case 'simple':
@@ -279,13 +326,13 @@ export class CubeRenderer {
     const { move, resolve, orientation } = this.animationQueue.shift();
     
     // Compute move properties
-    const kind = this.getMoveKind(move);
+    const kind = getMoveKind(move);
     let reorientationMove = null;
-    if (this.includesReorientation(kind)) {
+    if (includesReorientation(kind)) {
       if (kind === 'slice') {
-        reorientationMove = this.getSliceReorientationMove(move);
+        reorientationMove = getSliceReorientationMove(move);
       } else if (kind === 'double') {
-        reorientationMove = this.getDoubleReorientationMove(move);
+        reorientationMove = getDoubleReorientationMove(move);
       } else {
         reorientationMove = move; // reorientation kind
       }
@@ -300,7 +347,7 @@ export class CubeRenderer {
 
     // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
-    if (this.includesReorientation(kind)) {
+    if (includesReorientation(kind)) {
       reorientationData = this.setupReorientationAnimation(reorientationMove, orientation);
     }
 
@@ -310,7 +357,7 @@ export class CubeRenderer {
       this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
       // Handle reorientation animation
-      if (this.includesReorientation(this.currentAnimation.kind)) {
+      if (includesReorientation(this.currentAnimation.kind)) {
         this.updateReorientationAnimation(reorientationData, this.animationProgress);
       }
 
@@ -337,7 +384,7 @@ export class CubeRenderer {
         }
         
         // If this was a reorientation move, update stored orientations in remaining queue entries
-        if (this.includesReorientation(this.currentAnimation.kind)) {
+        if (includesReorientation(this.currentAnimation.kind)) {
           this.updateQueueOrientations();
         }
         
@@ -376,7 +423,7 @@ export class CubeRenderer {
 
   // Convert double moves to their single face move (for animation purposes)
   doubleToFaceMove(doubleMove, orientation = this.orientation) {
-    const faceMove = this.getDoubleFaceMove(doubleMove);
+    const faceMove = getDoubleFaceMove(doubleMove);
     return this.visualMoveToLogical(faceMove, orientation);
   }
 
@@ -459,37 +506,13 @@ export class CubeRenderer {
     });
   }
 
-  getRotationMatrix(axis, angle) {
-    const c = Math.cos(angle);
-    const s = Math.sin(angle);
-
-    if (axis === 'y') {
-      return {
-        x: (x, y, z) => x * c - z * s,
-        y: (x, y, z) => y,
-        z: (x, y, z) => x * s + z * c,
-      };
-    } else if (axis === 'x') {
-      return {
-        x: (x, y, z) => x,
-        y: (x, y, z) => y * c - z * s,
-        z: (x, y, z) => y * s + z * c,
-      };
-    } else if (axis === 'z') {
-      return {
-        x: (x, y, z) => x * c - y * s,
-        y: (x, y, z) => x * s + y * c,
-        z: (x, y, z) => z,
-      };
-    }
-  }
 
   getAnimationRotation(move, piecePosition, storedOrientation = this.orientation) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
-      if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
+      if (isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
         return this.getAnimationRotationForSingleMove(faceMoves[0]);
-      } else if (this.isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
+      } else if (isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
         return this.getAnimationRotationForSingleMove(faceMoves[1]);
       }
       return null;
@@ -497,7 +520,7 @@ export class CubeRenderer {
 
     if (['r', "r'", 'l', "l'", 'u', "u'", 'd', "d'", 'f', "f'", 'b', "b'"].includes(move)) {
       const faceMove = this.doubleToFaceMove(move, storedOrientation);
-      if (this.isPieceAffectedBySingleMove(piecePosition, faceMove)) {
+      if (isPieceAffectedBySingleMove(piecePosition, faceMove)) {
         return this.getAnimationRotationForSingleMove(faceMove);
       }
       return null;
@@ -524,7 +547,7 @@ export class CubeRenderer {
       throw new Error(`unknown move ${move}`);
     }
 
-    return this.getRotationMatrix(axis, angle);
+    return getRotationMatrix(axis, angle);
   }
 
   isPieceAffectedByMove(pieceType, piecePos, move, storedOrientation = this.orientation) {
@@ -535,31 +558,19 @@ export class CubeRenderer {
     if (['M', 'E', 'S'].includes(move[0])) {
       const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
       return (
-        this.isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
-        this.isPieceAffectedBySingleMove(piecePos, faceMoves[1])
+        isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
+        isPieceAffectedBySingleMove(piecePos, faceMoves[1])
       );
     }
 
     if (['r', 'l', 'u', 'd', 'f', 'b'].includes(move[0])) {
       const faceMove = this.doubleToFaceMove(move, storedOrientation);
-      return this.isPieceAffectedBySingleMove(piecePos, faceMove);
+      return isPieceAffectedBySingleMove(piecePos, faceMove);
     }
 
-    return this.isPieceAffectedBySingleMove(piecePos, move);
+    return isPieceAffectedBySingleMove(piecePos, move);
   }
 
-  isPieceAffectedBySingleMove(piecePos, move) {
-    const face = move[0];
-
-    if (face === 'U') return piecePos.y < -0.5;
-    if (face === 'D') return piecePos.y > 0.5;
-    if (face === 'R') return piecePos.x > 0.5;
-    if (face === 'L') return piecePos.x < -0.5;
-    if (face === 'F') return piecePos.z < -0.5;
-    if (face === 'B') return piecePos.z > 0.5;
-
-    throw new Error(`not a move: ${face}`);
-  }
 
   project3D(x, y, z, applyAnimation, piecePosition) {
     if (applyAnimation && this.currentAnimation) {
