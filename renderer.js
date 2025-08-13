@@ -437,24 +437,24 @@ export class CubeRenderer {
         const rFace = mapping.visualRight;
         const lFace = mapping.visualLeft;
         // Get the axis by finding the vector between R and L face normals
-        const rNormal = getFaceNormal(rFace, orientation);
-        const lNormal = getFaceNormal(lFace, orientation);
+        const rNormal = getFaceNormal(rFace, this.orientation);
+        const lNormal = getFaceNormal(lFace, this.orientation);
         axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
         break;
       case 'y':
         // Rotate around U-D axis (current visual up to down)
         const uFace = mapping.visualUp;
         const dFace = mapping.visualDown;
-        const uNormal = getFaceNormal(uFace, orientation);
-        const dNormal = getFaceNormal(dFace, orientation);
+        const uNormal = getFaceNormal(uFace, this.orientation);
+        const dNormal = getFaceNormal(dFace, this.orientation);
         axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
         break;
       case 'z':
         // Rotate around F-B axis (current visual front to back)
         const fFace = mapping.visualFront;
         const bFace = mapping.visualBack;
-        const fNormal = getFaceNormal(fFace, orientation);
-        const bNormal = getFaceNormal(bFace, orientation);
+        const fNormal = getFaceNormal(fFace, this.orientation);
+        const bNormal = getFaceNormal(bFace, this.orientation);
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
       default:

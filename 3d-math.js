@@ -21,11 +21,18 @@ export function quat_multiply(a, b) {
   ];
 }
 
+function dropSmall(v) {
+  if (Math.abs(v) < 1e-10) return 0;
+  return v;
+}
+
 export function quat_normalize(q) {
+  q = [dropSmall(q[0]), dropSmall(q[1]), dropSmall(q[2]), dropSmall(q[3])];
   let len = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
   if (len > 0) {
     len = 1 / Math.sqrt(len);
   }
+  if (len < 1e9) len
   return [q[0] * len, q[1] * len, q[2] * len, q[3] * len];
 }
 
