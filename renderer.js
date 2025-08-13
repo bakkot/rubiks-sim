@@ -306,8 +306,8 @@ function visualMoveToLogicalGeneral(visualMove, orientation) {
         else if (right === 'L') logicalSliceMove = "M'";
         else if (right === 'U') logicalSliceMove = 'E';
         else if (right === 'D') logicalSliceMove = "E'";
-        else if (right === 'F') logicalSliceMove = 'S';
-        else if (right === 'B') logicalSliceMove = "S'";
+        else if (right === 'F') logicalSliceMove = "S'";
+        else if (right === 'B') logicalSliceMove = 'S';
         break;
       case 'E':
         // E is middle slice between U and D
@@ -316,18 +316,18 @@ function visualMoveToLogicalGeneral(visualMove, orientation) {
         else if (up === 'D') logicalSliceMove = "E'";
         else if (up === 'R') logicalSliceMove = 'M';
         else if (up === 'L') logicalSliceMove = "M'";
-        else if (up === 'F') logicalSliceMove = 'S';
-        else if (up === 'B') logicalSliceMove = "S'";
+        else if (up === 'F') logicalSliceMove = "S'";
+        else if (up === 'B') logicalSliceMove = 'S';
         break;
       case 'S':
         // S is middle slice between F and B
         const front = mapping.visualFront;
         if (front === 'F') logicalSliceMove = 'S';
         else if (front === 'B') logicalSliceMove = "S'";
-        else if (front === 'R') logicalSliceMove = 'M';
-        else if (front === 'L') logicalSliceMove = "M'";
-        else if (front === 'U') logicalSliceMove = 'E';
-        else if (front === 'D') logicalSliceMove = "E'";
+        else if (front === 'R') logicalSliceMove = "M'";
+        else if (front === 'L') logicalSliceMove = 'M';
+        else if (front === 'U') logicalSliceMove = "E'";
+        else if (front === 'D') logicalSliceMove = 'E';
         break;
       default:
         throw new Error(`Unknown slice move: ${baseFace}`);
@@ -460,6 +460,7 @@ export class CubeRenderer {
     this.animating = true;
     const { move, resolve, orientation } = this.animationQueue.shift();
 
+    const logicalMove = visualMoveToLogicalGeneral(move, orientation);
     const kind = getMoveKind(move);
 
     const startTime = Date.now();
@@ -474,15 +475,14 @@ export class CubeRenderer {
     if (includesReorientation(kind)) {
       let reorientationMove = null;
       if (kind === 'slice') {
-        reorientationMove = sliceToReorientationMove(move);
+        reorientationMove = sliceToReorientationMove(logicalMove);
       } else if (kind === 'double') {
-        reorientationMove = doubleToReorientationMove(move);
+        reorientationMove = doubleToReorientationMove(logicalMove);
       } else {
-        reorientationMove = move; // reorientation kind
+        reorientationMove = logicalMove; // reorientation kind
       }
 
-      const logicalReorientationMove = visualReorientationToLogical(reorientationMove, orientation);
-      reorientationData = this.setupReorientationAnimation(logicalReorientationMove);
+      reorientationData = this.setupReorientationAnimation(reorientationMove);
     }
 
     const animate = () => {
