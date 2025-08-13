@@ -219,19 +219,19 @@ function isPieceAffectedByMove(piecePos, move, orientation) {
   switch (kind) {
     case 'simple': {
       const logicalMove = visualMoveToLogical(move, orientation);
-      return isPieceAffectedBySingleMove(piecePos, logicalMove);
+      return isPieceAffectedByFaceTurn(piecePos, logicalMove);
     }
     case 'reorientation': {
       return false
     }
     case 'slice': {
       const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
-      return isPieceAffectedBySingleMove(piecePos, logicalMoves[0]) || isPieceAffectedBySingleMove(piecePos, logicalMoves[1]);
+      return isPieceAffectedByFaceTurn(piecePos, logicalMoves[0]) || isPieceAffectedByFaceTurn(piecePos, logicalMoves[1]);
     }
     case 'double': {
       const faceMove = doubleToFaceMove(move);
       const logicalMove = visualMoveToLogical(faceMove, orientation);
-      return isPieceAffectedBySingleMove(piecePos, logicalMove);
+      return isPieceAffectedByFaceTurn(piecePos, logicalMove);
     }
     default: {
       throw new Error(`Unknown move kind: ${kind}`);
@@ -239,7 +239,7 @@ function isPieceAffectedByMove(piecePos, move, orientation) {
   }
 }
 
-function isPieceAffectedBySingleMove(piecePos, move) {
+function isPieceAffectedByFaceTurn(piecePos, move) {
   const face = move[0];
 
   if (face === 'U') return piecePos.y < -0.5;
@@ -266,7 +266,6 @@ export class CubeRenderer {
     this.orientation = [0.14000166646724985, 0.14000166646724985, 0, 0.9802035843501011];
     this.animating = false;
     this.animationQueue = [];
-    this.animationProgress = 0;
     this.currentAnimation = null;
     this.render();
   }
@@ -360,14 +359,13 @@ export class CubeRenderer {
       }
     }
 
-    this.currentAnimation = {
+    const startTime = Date.now();
+    const currentAnimation = {
       move,
-      resolve,
-      startTime: Date.now(),
-      kind,
-      reorientationMove,
+      animationProgress: 0,
       initialOrientation: orientation,
     };
+    this.currentAnimation = currentAnimation;
 
     let reorientationData = null;
     if (includesReorientation(kind)) {
@@ -376,34 +374,33 @@ export class CubeRenderer {
 
     const animate = () => {
       if (!this.currentAnimation) return;
-      const elapsed = Date.now() - this.currentAnimation.startTime;
-      this.animationProgress = Math.min(elapsed / this.animationDuration, 1);
+      const elapsed = Date.now() - startTime;
+      this.currentAnimation.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
-      if (includesReorientation(this.currentAnimation.kind)) {
-        this.updateReorientationAnimation(reorientationData, this.animationProgress);
+      if (includesReorientation(kind)) {
+        this.updateReorientationAnimation(reorientationData, this.currentAnimation.animationProgress);
       }
 
       this.render();
 
-      if (this.animationProgress < 1) {
+      if (this.currentAnimation.animationProgress < 1) {
         requestAnimationFrame(animate);
       } else {
         // Apply the actual move(s) to the cube state
-        if (this.currentAnimation.kind === 'slice') {
-          const sliceMove = this.currentAnimation.move;
-          const logicalMoves = sliceToFaceMoves(sliceMove).map(m => visualMoveToLogical(m, orientation));
+        if (kind === 'slice') {
+          const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
           this.cube.move(logicalMoves[0]);
           this.cube.move(logicalMoves[1]);
-        } else if (this.currentAnimation.kind === 'double') {
-          const faceMove = doubleToFaceMove(this.currentAnimation.move);
+        } else if (kind === 'double') {
+          const faceMove = doubleToFaceMove(move);
           const logicalMove = visualMoveToLogical(faceMove, orientation);
           this.cube.move(logicalMove);
-        } else if (this.currentAnimation.kind === 'simple') {
-          const logicalMove = visualMoveToLogical(this.currentAnimation.move, orientation);
+        } else if (kind === 'simple') {
+          const logicalMove = visualMoveToLogical(move, orientation);
           this.cube.move(logicalMove);
         }
 
-        if (includesReorientation(this.currentAnimation.kind)) {
+        if (includesReorientation(kind)) {
           // Calculate the rotation that was just applied
           const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
 
@@ -415,8 +412,7 @@ export class CubeRenderer {
 
         // Note: Reorientation moves don't change cube state, only visual orientation
         // Final orientation is already set by updateReorientationAnimation
-        this.animationProgress = 0;
-        this.currentAnimation.resolve();
+        resolve();
         this.currentAnimation = null;
         this.render();
         this.processAnimationQueue();
@@ -490,14 +486,14 @@ export class CubeRenderer {
     this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
-  getAnimationRotation(move, piecePosition, orientation) {
+  getFaceTurnAnimationRotation(move, piecePosition, orientation) {
     const kind = getMoveKind(move);
 
     switch (kind) {
       case 'simple': {
         const logicalMove = visualMoveToLogical(move, orientation);
-        if (isPieceAffectedBySingleMove(piecePosition, logicalMove)) {
-          return this.getAnimationRotationForSingleMove(logicalMove);
+        if (isPieceAffectedByFaceTurn(piecePosition, logicalMove)) {
+          return this.getFaceTurnAnimationRotationForSingleMove(logicalMove);
         }
       }
       case 'reorientation': {
@@ -505,10 +501,10 @@ export class CubeRenderer {
       }
       case 'slice': {
         const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
-        if (isPieceAffectedBySingleMove(piecePosition, logicalMoves[0])) {
-          return this.getAnimationRotationForSingleMove(logicalMoves[0]);
-        } else if (isPieceAffectedBySingleMove(piecePosition, logicalMoves[1])) {
-          return this.getAnimationRotationForSingleMove(logicalMoves[1]);
+        if (isPieceAffectedByFaceTurn(piecePosition, logicalMoves[0])) {
+          return this.getFaceTurnAnimationRotationForSingleMove(logicalMoves[0]);
+        } else if (isPieceAffectedByFaceTurn(piecePosition, logicalMoves[1])) {
+          return this.getFaceTurnAnimationRotationForSingleMove(logicalMoves[1]);
         }
         return null;
       }
@@ -516,8 +512,8 @@ export class CubeRenderer {
         const faceMove = doubleToFaceMove(move);
         const logicalMove = visualMoveToLogical(faceMove, orientation);
 
-        if (isPieceAffectedBySingleMove(piecePosition, logicalMove)) {
-          return this.getAnimationRotationForSingleMove(logicalMove);
+        if (isPieceAffectedByFaceTurn(piecePosition, logicalMove)) {
+          return this.getFaceTurnAnimationRotationForSingleMove(logicalMove);
         }
         return null;
       }
@@ -527,20 +523,20 @@ export class CubeRenderer {
     }
   }
 
-  getAnimationRotationForSingleMove(move) {
+  getFaceTurnAnimationRotationForSingleMove(move) {
     const face = move[0];
     const isPrime = move.includes("'");
 
     let axis, angle;
     if (face === 'U' || face === 'D') {
       axis = 'y';
-      angle = (((face === 'U' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.animationProgress;
+      angle = (((face === 'U' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.currentAnimation.animationProgress;
     } else if (face === 'R' || face === 'L') {
       axis = 'x';
-      angle = (((face === 'R' ? 1 : -1) * (isPrime ? 1 : -1) * Math.PI) / 2) * this.animationProgress;
+      angle = (((face === 'R' ? 1 : -1) * (isPrime ? 1 : -1) * Math.PI) / 2) * this.currentAnimation.animationProgress;
     } else if (face === 'F' || face === 'B') {
       axis = 'z';
-      angle = (((face === 'B' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.animationProgress;
+      angle = (((face === 'B' ? -1 : 1) * (isPrime ? -1 : 1) * Math.PI) / 2) * this.currentAnimation.animationProgress;
     } else {
       throw new Error(`unknown move ${move}`);
     }
@@ -550,7 +546,7 @@ export class CubeRenderer {
 
   project3D(x, y, z, piecePosition) {
     if (this.currentAnimation) {
-      const rotation = this.getAnimationRotation(this.currentAnimation.move, piecePosition, this.currentAnimation.initialOrientation);
+      const rotation = this.getFaceTurnAnimationRotation(this.currentAnimation.move, piecePosition, this.currentAnimation.initialOrientation);
       if (rotation) {
         const newX = rotation.x(x, y, z);
         const newY = rotation.y(x, y, z);
