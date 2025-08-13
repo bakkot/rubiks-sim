@@ -219,7 +219,7 @@ function doubleToFaceMove(doubleMove, orientation) {
   return visualMoveToLogical(faceMove, orientation);
 }
 
-function isPieceAffectedByMove(pieceType, piecePos, move, orientation) {
+function isPieceAffectedByMove(piecePos, move, orientation) {
   if (['x', 'y', 'z'].includes(move[0])) {
     return false;
   }
@@ -234,6 +234,7 @@ function isPieceAffectedByMove(pieceType, piecePos, move, orientation) {
     return isPieceAffectedBySingleMove(piecePos, faceMove);
   }
 
+  // TODO
   return isPieceAffectedBySingleMove(piecePos, move);
 }
 
@@ -402,11 +403,18 @@ export class CubeRenderer {
           const faceMove = doubleToFaceMove(doubleMove, orientation);
           this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
+          // TODO
           this.cube.move(this.currentAnimation.move);
         }
 
         if (includesReorientation(this.currentAnimation.kind)) {
-          this.updateQueueOrientations();
+          // Calculate the rotation that was just applied
+          const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
+
+          // Update all remaining queue entries
+          this.animationQueue.forEach(queueEntry => {
+            queueEntry.orientation = quat_normalize(quat_multiply(rotationQuat, queueEntry.orientation));
+          });
         }
 
         // Note: Reorientation moves don't change cube state, only visual orientation
@@ -486,23 +494,6 @@ export class CubeRenderer {
     this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
-  // Update stored orientations in queue after reorientation move
-  updateQueueOrientations() {
-    const { reorientationMove } = this.currentAnimation;
-
-    // Calculate the rotation that was just applied
-    const reorientationData = this.setupReorientationAnimation(
-      reorientationMove,
-      this.currentAnimation.initialOrientation,
-    );
-    const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
-
-    // Update all remaining queue entries
-    this.animationQueue.forEach(queueEntry => {
-      queueEntry.orientation = quat_normalize(quat_multiply(rotationQuat, queueEntry.orientation));
-    });
-  }
-
   getAnimationRotation(move, piecePosition, orientation) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = sliceToFaceMoves(move, orientation);
@@ -521,6 +512,8 @@ export class CubeRenderer {
       }
       return null;
     }
+
+    // TODO
 
     return this.getAnimationRotationForSingleMove(move);
   }
@@ -548,9 +541,7 @@ export class CubeRenderer {
 
   project3D(x, y, z, applyAnimation, piecePosition) {
     if (applyAnimation && this.currentAnimation) {
-      const move = this.currentAnimation.move;
-
-      const rotation = this.getAnimationRotation(move, piecePosition, this.currentAnimation.initialOrientation);
+      const rotation = this.getAnimationRotation(this.currentAnimation.move, piecePosition, this.currentAnimation.initialOrientation);
       if (rotation) {
         const newX = rotation.x(x, y, z);
         const newY = rotation.y(x, y, z);
@@ -658,7 +649,6 @@ export class CubeRenderer {
       const shouldAnimate =
         this.currentAnimation &&
         isPieceAffectedByMove(
-          'center',
           center.pos,
           this.currentAnimation.move,
           this.currentAnimation.initialOrientation,
@@ -733,7 +723,7 @@ export class CubeRenderer {
         const faceDistance = 1.01; // Slightly outside the cube center
         const shouldAnimate =
           this.currentAnimation &&
-          isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.initialOrientation);
+          isPieceAffectedByMove(pos, this.currentAnimation.move, this.currentAnimation.initialOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -827,7 +817,7 @@ export class CubeRenderer {
         const faceDistance = 1.01;
         const shouldAnimate =
           this.currentAnimation &&
-          isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.initialOrientation);
+          isPieceAffectedByMove(pos, this.currentAnimation.move, this.currentAnimation.initialOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
