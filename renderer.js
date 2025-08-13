@@ -6,26 +6,26 @@ import { vec3_transformQuat, quat_fromAxisAngle, quat_multiply, quat_normalize }
 function getMoveKind(move) {
   const baseFace = move[0];
   const moveKinds = {
-    'U': 'simple',
-    'D': 'simple',
-    'R': 'simple',
-    'L': 'simple',
-    'F': 'simple',
-    'B': 'simple',
-    'x': 'reorientation',
-    'y': 'reorientation', 
-    'z': 'reorientation',
-    'M': 'slice',
-    'E': 'slice',
-    'S': 'slice',
-    'r': 'double',
-    'l': 'double',
-    'u': 'double',
-    'd': 'double',
-    'f': 'double',
-    'b': 'double'
+    U: 'simple',
+    D: 'simple',
+    R: 'simple',
+    L: 'simple',
+    F: 'simple',
+    B: 'simple',
+    x: 'reorientation',
+    y: 'reorientation',
+    z: 'reorientation',
+    M: 'slice',
+    E: 'slice',
+    S: 'slice',
+    r: 'double',
+    l: 'double',
+    u: 'double',
+    d: 'double',
+    f: 'double',
+    b: 'double',
   };
-  
+
   const kind = moveKinds[baseFace];
   if (!kind) {
     throw new Error(`Unknown move: ${move}`);
@@ -41,14 +41,14 @@ function includesReorientation(kind) {
 // Get the reorientation move for slice moves
 function getSliceReorientationMove(sliceMove) {
   const sliceToReorientationMap = {
-    'M': "x'",
+    M: "x'",
     "M'": 'x',
-    'E': "y'",
+    E: "y'",
     "E'": 'y',
-    'S': 'z',
+    S: 'z',
     "S'": "z'",
   };
-  
+
   return sliceToReorientationMap[sliceMove];
 }
 
@@ -56,16 +56,16 @@ function getSliceReorientationMove(sliceMove) {
 function getDoubleReorientationMove(doubleMove) {
   const baseFace = doubleMove[0];
   const isPrime = doubleMove.includes("'");
-  
+
   const doubleToReorientationMap = {
-    'r': isPrime ? "x'" : 'x',
-    'l': isPrime ? 'x' : "x'",
-    'u': isPrime ? "y'" : 'y',
-    'd': isPrime ? 'y' : "y'",
-    'f': isPrime ? "z'" : "z",
-    'b': isPrime ? 'z' : "z'",
+    r: isPrime ? "x'" : 'x',
+    l: isPrime ? 'x' : "x'",
+    u: isPrime ? "y'" : 'y',
+    d: isPrime ? 'y' : "y'",
+    f: isPrime ? "z'" : 'z',
+    b: isPrime ? 'z' : "z'",
   };
-  
+
   return doubleToReorientationMap[baseFace];
 }
 
@@ -73,16 +73,16 @@ function getDoubleReorientationMove(doubleMove) {
 function getDoubleFaceMove(doubleMove) {
   const baseFace = doubleMove[0];
   const isPrime = doubleMove.includes("'");
-  
+
   const doubleToFaceMap = {
-    'r': isPrime ? "L'" : 'L',
-    'l': isPrime ? "R'" : 'R',
-    'u': isPrime ? "D'" : 'D',
-    'd': isPrime ? "U'" : 'U', 
-    'f': isPrime ? "B'" : 'B',
-    'b': isPrime ? "F'" : 'F'
+    r: isPrime ? "L'" : 'L',
+    l: isPrime ? "R'" : 'R',
+    u: isPrime ? "D'" : 'D',
+    d: isPrime ? "U'" : 'U',
+    f: isPrime ? "B'" : 'B',
+    b: isPrime ? "F'" : 'F',
   };
-  
+
   return doubleToFaceMap[baseFace];
 }
 
@@ -245,10 +245,7 @@ function isPieceAffectedByMove(pieceType, piecePos, move, storedOrientation) {
 
   if (['M', 'E', 'S'].includes(move[0])) {
     const faceMoves = sliceToFaceMoves(move, storedOrientation);
-    return (
-      isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
-      isPieceAffectedBySingleMove(piecePos, faceMoves[1])
-    );
+    return isPieceAffectedBySingleMove(piecePos, faceMoves[0]) || isPieceAffectedBySingleMove(piecePos, faceMoves[1]);
   }
 
   if (['r', 'l', 'u', 'd', 'f', 'b'].includes(move[0])) {
@@ -291,14 +288,6 @@ export class CubeRenderer {
     this.currentAnimation = null;
     this.render();
   }
-
-
-
-
-
-
-
-
 
   animateMove(move) {
     const kind = getMoveKind(move);
@@ -376,7 +365,7 @@ export class CubeRenderer {
 
     this.animating = true;
     const { move, resolve, orientation } = this.animationQueue.shift();
-    
+
     // Compute move properties
     const kind = getMoveKind(move);
     let reorientationMove = null;
@@ -395,7 +384,14 @@ export class CubeRenderer {
       processedMove = visualMoveToLogical(move, orientation);
     }
 
-    this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), kind, reorientationMove, storedOrientation: orientation };
+    this.currentAnimation = {
+      move: processedMove,
+      resolve,
+      startTime: Date.now(),
+      kind,
+      reorientationMove,
+      storedOrientation: orientation,
+    };
 
     // For reorientation moves and slice moves, set up the rotation data
     let reorientationData = null;
@@ -434,12 +430,12 @@ export class CubeRenderer {
           // Apply single face moves (reorientation moves don't change cube state)
           this.cube.move(this.currentAnimation.move);
         }
-        
+
         // If this was a reorientation move, update stored orientations in remaining queue entries
         if (includesReorientation(this.currentAnimation.kind)) {
           this.updateQueueOrientations();
         }
-        
+
         // Note: Reorientation moves don't change cube state, only visual orientation
         // Final orientation is already set by updateReorientationAnimation
         this.animationProgress = 0;
@@ -452,8 +448,6 @@ export class CubeRenderer {
 
     animate();
   }
-
-
 
   setupReorientationAnimation(move, orientation) {
     const isPrime = move.includes("'");
@@ -523,17 +517,19 @@ export class CubeRenderer {
   // Update stored orientations in queue after reorientation move
   updateQueueOrientations() {
     const { reorientationMove } = this.currentAnimation;
-    
+
     // Calculate the rotation that was just applied
-    const reorientationData = this.setupReorientationAnimation(reorientationMove, this.currentAnimation.storedOrientation);
+    const reorientationData = this.setupReorientationAnimation(
+      reorientationMove,
+      this.currentAnimation.storedOrientation,
+    );
     const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
-    
+
     // Update all remaining queue entries
     this.animationQueue.forEach(queueEntry => {
       queueEntry.orientation = quat_normalize(quat_multiply(rotationQuat, queueEntry.orientation));
     });
   }
-
 
   getAnimationRotation(move, piecePosition, storedOrientation) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
@@ -577,8 +573,6 @@ export class CubeRenderer {
 
     return getRotationMatrix(axis, angle);
   }
-
-
 
   project3D(x, y, z, applyAnimation, piecePosition) {
     if (applyAnimation && this.currentAnimation) {
@@ -690,7 +684,13 @@ export class CubeRenderer {
       const size = 0.333; // 1/3 of cube edge
       const faceDistance = 1.01; // Slightly outside the cube center
       const shouldAnimate =
-        this.currentAnimation && isPieceAffectedByMove('center', center.pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+        this.currentAnimation &&
+        isPieceAffectedByMove(
+          'center',
+          center.pos,
+          this.currentAnimation.move,
+          this.currentAnimation.storedOrientation,
+        );
 
       const corners = [
         this.project3D(
@@ -760,7 +760,8 @@ export class CubeRenderer {
         const size = 0.333; // 1/3 of cube edge
         const faceDistance = 1.01; // Slightly outside the cube center
         const shouldAnimate =
-          this.currentAnimation && isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+          this.currentAnimation &&
+          isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -853,7 +854,8 @@ export class CubeRenderer {
         const size = 0.333;
         const faceDistance = 1.01;
         const shouldAnimate =
-          this.currentAnimation && isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+          this.currentAnimation &&
+          isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
