@@ -220,6 +220,7 @@ function doubleToFaceMove(doubleMove, orientation) {
 }
 
 function isPieceAffectedByMove(piecePos, move, orientation) {
+  // TODO use kind
   if (['x', 'y', 'z'].includes(move[0])) {
     return false;
   }
@@ -234,7 +235,7 @@ function isPieceAffectedByMove(piecePos, move, orientation) {
     return isPieceAffectedBySingleMove(piecePos, faceMove);
   }
 
-  // TODO
+  move = visualMoveToLogical(move, orientation);
   return isPieceAffectedBySingleMove(piecePos, move);
 }
 
@@ -359,13 +360,8 @@ export class CubeRenderer {
       }
     }
 
-    let processedMove = move;
-    if (kind === 'simple') {
-      processedMove = visualMoveToLogical(move, orientation);
-    }
-
     this.currentAnimation = {
-      move: processedMove,
+      move,
       resolve,
       startTime: Date.now(),
       kind,
@@ -403,8 +399,8 @@ export class CubeRenderer {
           const faceMove = doubleToFaceMove(doubleMove, orientation);
           this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
-          // TODO
-          this.cube.move(this.currentAnimation.move);
+          const logicalMove = visualMoveToLogical(this.currentAnimation.move, orientation);
+          this.cube.move(logicalMove);
         }
 
         if (includesReorientation(this.currentAnimation.kind)) {
@@ -495,6 +491,7 @@ export class CubeRenderer {
   }
 
   getAnimationRotation(move, piecePosition, orientation) {
+    // TODO use kind
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
       const faceMoves = sliceToFaceMoves(move, orientation);
       if (isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
@@ -513,7 +510,7 @@ export class CubeRenderer {
       return null;
     }
 
-    // TODO
+    move = visualMoveToLogical(move, orientation);
     if (isPieceAffectedBySingleMove(piecePosition, move)) {
       return this.getAnimationRotationForSingleMove(move);
     }
