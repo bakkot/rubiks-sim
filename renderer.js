@@ -266,6 +266,92 @@ function visualReorientationToLogical(visualReorientationMove, orientation) {
   return logicalMove;
 }
 
+function visualMoveToLogicalGeneral(visualMove, orientation) {
+  const kind = getMoveKind(visualMove);
+  
+  if (kind === 'simple') {
+    return visualMoveToLogical(visualMove, orientation);
+  }
+  
+  if (kind === 'double') {
+    const mapping = getVisualToLogicalMapping(orientation);
+    const isPrime = visualMove.includes("'");
+    const baseFace = visualMove[0];
+    
+    let logicalBaseFace;
+    switch (baseFace) {
+      case 'r': logicalBaseFace = mapping.visualRight.toLowerCase(); break;
+      case 'l': logicalBaseFace = mapping.visualLeft.toLowerCase(); break;
+      case 'u': logicalBaseFace = mapping.visualUp.toLowerCase(); break;
+      case 'd': logicalBaseFace = mapping.visualDown.toLowerCase(); break;
+      case 'f': logicalBaseFace = mapping.visualFront.toLowerCase(); break;
+      case 'b': logicalBaseFace = mapping.visualBack.toLowerCase(); break;
+      default: throw new Error(`Unknown double move: ${baseFace}`);
+    }
+    
+    return logicalBaseFace + (isPrime ? "'" : '');
+  }
+  
+  if (kind === 'slice') {
+    const mapping = getVisualToLogicalMapping(orientation);
+    const isPrime = visualMove.includes("'");
+    const baseFace = visualMove[0];
+    
+    let logicalSliceMove;
+    switch (baseFace) {
+      case 'M':
+        // M is middle slice between R and L
+        const right = mapping.visualRight;
+        if (right === 'R') logicalSliceMove = 'M';
+        else if (right === 'L') logicalSliceMove = "M'";
+        else if (right === 'U') logicalSliceMove = 'E';
+        else if (right === 'D') logicalSliceMove = "E'";
+        else if (right === 'F') logicalSliceMove = 'S';
+        else if (right === 'B') logicalSliceMove = "S'";
+        break;
+      case 'E':
+        // E is middle slice between U and D
+        const up = mapping.visualUp;
+        if (up === 'U') logicalSliceMove = 'E';
+        else if (up === 'D') logicalSliceMove = "E'";
+        else if (up === 'R') logicalSliceMove = 'M';
+        else if (up === 'L') logicalSliceMove = "M'";
+        else if (up === 'F') logicalSliceMove = 'S';
+        else if (up === 'B') logicalSliceMove = "S'";
+        break;
+      case 'S':
+        // S is middle slice between F and B
+        const front = mapping.visualFront;
+        if (front === 'F') logicalSliceMove = 'S';
+        else if (front === 'B') logicalSliceMove = "S'";
+        else if (front === 'R') logicalSliceMove = 'M';
+        else if (front === 'L') logicalSliceMove = "M'";
+        else if (front === 'U') logicalSliceMove = 'E';
+        else if (front === 'D') logicalSliceMove = "E'";
+        break;
+      default:
+        throw new Error(`Unknown slice move: ${baseFace}`);
+    }
+    
+    // Apply prime if the visual move was prime
+    if (isPrime) {
+      if (logicalSliceMove.includes("'")) {
+        logicalSliceMove = logicalSliceMove[0]; // Remove prime
+      } else {
+        logicalSliceMove += "'"; // Add prime
+      }
+    }
+    
+    return logicalSliceMove;
+  }
+  
+  if (kind === 'reorientation') {
+    return visualReorientationToLogical(visualMove, orientation);
+  }
+  
+  throw new Error(`Unknown move kind: ${kind}`);
+}
+
 function isPieceAffectedByMove(piecePos, move, orientation) {
   const kind = getMoveKind(move);
 
