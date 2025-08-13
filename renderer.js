@@ -181,96 +181,40 @@ function getFaceNormal(logicalFace, orientation) {
   return transformedNormal;
 }
 
-function visualMoveToLogical(visualMove, orientation) {
-  const mapping = getVisualToLogicalMapping(orientation);
-  const isPrime = visualMove.includes("'");
-  const baseFace = visualMove[0];
-
-  let logicalFace;
-  switch (baseFace) {
-    case 'U':
-      logicalFace = mapping.visualUp;
-      break;
-    case 'D':
-      logicalFace = mapping.visualDown;
-      break;
-    case 'R':
-      logicalFace = mapping.visualRight;
-      break;
-    case 'L':
-      logicalFace = mapping.visualLeft;
-      break;
-    case 'F':
-      logicalFace = mapping.visualFront;
-      break;
-    case 'B':
-      logicalFace = mapping.visualBack;
-      break;
-    default:
-      throw new Error(`not a move: ${baseFace}`);
-  }
-
-  return logicalFace + (isPrime ? "'" : '');
-}
-
-function visualReorientationToLogical(visualReorientationMove, orientation) {
-  const mapping = getVisualToLogicalMapping(orientation);
-  const isPrime = visualReorientationMove.includes("'");
-  const baseFace = visualReorientationMove[0];
-
-  let logicalMove;
-  switch (baseFace) {
-    case 'x':
-      // x rotates around R-L axis
-      const right = mapping.visualRight;
-      if (right === 'R') logicalMove = 'x';
-      else if (right === 'L') logicalMove = "x'";
-      else if (right === 'U') logicalMove = 'y';
-      else if (right === 'D') logicalMove = "y'";
-      else if (right === 'F') logicalMove = 'z';
-      else if (right === 'B') logicalMove = "z'";
-      break;
-    case 'y':
-      // y rotates around U-D axis
-      const up = mapping.visualUp;
-      if (up === 'U') logicalMove = 'y';
-      else if (up === 'D') logicalMove = "y'";
-      else if (up === 'R') logicalMove = 'x';
-      else if (up === 'L') logicalMove = "x'";
-      else if (up === 'F') logicalMove = 'z';
-      else if (up === 'B') logicalMove = "z'";
-      break;
-    case 'z':
-      // z rotates around F-B axis
-      const front = mapping.visualFront;
-      if (front === 'F') logicalMove = 'z';
-      else if (front === 'B') logicalMove = "z'";
-      else if (front === 'R') logicalMove = 'x';
-      else if (front === 'L') logicalMove = "x'";
-      else if (front === 'U') logicalMove = 'y';
-      else if (front === 'D') logicalMove = "y'";
-      break;
-    default:
-      throw new Error(`not a reorientation move: ${baseFace}`);
-  }
-
-  // Apply prime if the visual move was prime
-  if (isPrime) {
-    if (logicalMove.includes("'")) {
-      logicalMove = logicalMove[0]; // Remove prime
-    } else {
-      logicalMove += "'"; // Add prime
-    }
-  }
-
-  return logicalMove;
-}
 
 function visualMoveToLogicalGeneral(visualMove, orientation) {
   const kind = getMoveKind(visualMove);
   
   if (kind === 'simple') {
-    return visualMoveToLogical(visualMove, orientation);
+    const mapping = getVisualToLogicalMapping(orientation);
+    const isPrime = visualMove.includes("'");
+    const baseFace = visualMove[0];
+
+    let logicalFace;
+    switch (baseFace) {
+      case 'U':
+        logicalFace = mapping.visualUp;
+        break;
+      case 'D':
+        logicalFace = mapping.visualDown;
+        break;
+      case 'R':
+        logicalFace = mapping.visualRight;
+        break;
+      case 'L':
+        logicalFace = mapping.visualLeft;
+        break;
+      case 'F':
+        logicalFace = mapping.visualFront;
+        break;
+      case 'B':
+        logicalFace = mapping.visualBack;
+        break;
+      default:
+        throw new Error(`not a move: ${baseFace}`);
+    }
+
+    return logicalFace + (isPrime ? "'" : '');
   }
   
   if (kind === 'double') {
@@ -346,7 +290,56 @@ function visualMoveToLogicalGeneral(visualMove, orientation) {
   }
   
   if (kind === 'reorientation') {
-    return visualReorientationToLogical(visualMove, orientation);
+    const mapping = getVisualToLogicalMapping(orientation);
+    const isPrime = visualMove.includes("'");
+    const baseFace = visualMove[0];
+
+    let logicalMove;
+    switch (baseFace) {
+      case 'x':
+        // x rotates around R-L axis
+        const right = mapping.visualRight;
+        if (right === 'R') logicalMove = 'x';
+        else if (right === 'L') logicalMove = "x'";
+        else if (right === 'U') logicalMove = 'y';
+        else if (right === 'D') logicalMove = "y'";
+        else if (right === 'F') logicalMove = 'z';
+        else if (right === 'B') logicalMove = "z'";
+        break;
+      case 'y':
+        // y rotates around U-D axis
+        const up = mapping.visualUp;
+        if (up === 'U') logicalMove = 'y';
+        else if (up === 'D') logicalMove = "y'";
+        else if (up === 'R') logicalMove = 'x';
+        else if (up === 'L') logicalMove = "x'";
+        else if (up === 'F') logicalMove = 'z';
+        else if (up === 'B') logicalMove = "z'";
+        break;
+      case 'z':
+        // z rotates around F-B axis
+        const front = mapping.visualFront;
+        if (front === 'F') logicalMove = 'z';
+        else if (front === 'B') logicalMove = "z'";
+        else if (front === 'R') logicalMove = 'x';
+        else if (front === 'L') logicalMove = "x'";
+        else if (front === 'U') logicalMove = 'y';
+        else if (front === 'D') logicalMove = "y'";
+        break;
+      default:
+        throw new Error(`not a reorientation move: ${baseFace}`);
+    }
+
+    // Apply prime if the visual move was prime
+    if (isPrime) {
+      if (logicalMove.includes("'")) {
+        logicalMove = logicalMove[0]; // Remove prime
+      } else {
+        logicalMove += "'"; // Add prime
+      }
+    }
+
+    return logicalMove;
   }
   
   throw new Error(`Unknown move kind: ${kind}`);
@@ -461,7 +454,7 @@ export class CubeRenderer {
     const { move, resolve, orientation } = this.animationQueue.shift();
 
     const logicalMove = visualMoveToLogicalGeneral(move, orientation);
-    const kind = getMoveKind(move);
+    const kind = getMoveKind(logicalMove);
 
     const startTime = Date.now();
     const currentAnimation = {
