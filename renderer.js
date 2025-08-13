@@ -112,6 +112,153 @@ function getRotationMatrix(axis, angle) {
   }
 }
 
+// Map visual face positions to logical faces based on orientation
+function getVisualToLogicalMapping(orientation) {
+  const faceNormals = {
+    U: [0, -1, 0], // Up face points down in our coordinate system
+    D: [0, 1, 0], // Down face points up
+    R: [1, 0, 0], // Right face points right
+    L: [-1, 0, 0], // Left face points left
+    F: [0, 0, -1], // Front face points toward viewer
+    B: [0, 0, 1], // Back face points away from viewer
+  };
+
+  const visualDirections = {
+    visualUp: [0, -1, 0], // Visual up is negative Y
+    visualDown: [0, 1, 0], // Visual down is positive Y
+    visualRight: [1, 0, 0], // Visual right is positive X
+    visualLeft: [-1, 0, 0], // Visual left is negative X
+    visualFront: [0, 0, -1], // Visual front is negative Z
+    visualBack: [0, 0, 1], // Visual back is positive Z
+  };
+
+  // For each visual direction, find which logical face is closest to it
+  return Object.fromEntries(
+    Object.entries(visualDirections).map(([visualPos, visualDir]) => {
+      let bestMatch = null;
+      let bestDot = -2; // Start with impossible dot product value
+
+      // Check each logical face
+      Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
+        // Transform the logical face normal by the provided orientation
+        const transformedNormal = vec3_transformQuat(normal, orientation);
+
+        // Calculate dot product to find how aligned they are
+        const dot =
+          transformedNormal[0] * visualDir[0] +
+          transformedNormal[1] * visualDir[1] +
+          transformedNormal[2] * visualDir[2];
+
+        // Keep track of the best match
+        if (dot > bestDot) {
+          bestDot = dot;
+          bestMatch = logicalFace;
+        }
+      });
+
+      return [visualPos, bestMatch];
+    }),
+  );
+}
+
+// Get face normal in world space
+function getFaceNormal(logicalFace, orientation) {
+  const faceNormals = {
+    U: [0, -1, 0],
+    D: [0, 1, 0],
+    R: [1, 0, 0],
+    L: [-1, 0, 0],
+    F: [0, 0, -1],
+    B: [0, 0, 1],
+  };
+
+  const normal = faceNormals[logicalFace];
+  const transformedNormal = vec3_transformQuat(normal, orientation);
+  return transformedNormal;
+}
+
+// Convert visual move notation to logical move notation
+function visualMoveToLogical(visualMove, orientation) {
+  const mapping = getVisualToLogicalMapping(orientation);
+  const isPrime = visualMove.includes("'");
+  const baseFace = visualMove[0];
+
+  let logicalFace;
+  switch (baseFace) {
+    case 'U':
+      logicalFace = mapping.visualUp;
+      break;
+    case 'D':
+      logicalFace = mapping.visualDown;
+      break;
+    case 'R':
+      logicalFace = mapping.visualRight;
+      break;
+    case 'L':
+      logicalFace = mapping.visualLeft;
+      break;
+    case 'F':
+      logicalFace = mapping.visualFront;
+      break;
+    case 'B':
+      logicalFace = mapping.visualBack;
+      break;
+    default:
+      throw new Error(`not a move: ${baseFace}`);
+  }
+
+  return logicalFace + (isPrime ? "'" : '');
+}
+
+// Convert slice moves to dual logical face moves
+function sliceToFaceMoves(sliceMove, orientation) {
+  // Convert slice moves to visual dual face moves
+  const sliceToFaceMap = {
+    M: ['R', "L'"], // M = R+L'
+    "M'": ["R'", 'L'], // M' = R'+L
+    E: ['U', "D'"], // E = U+D'
+    "E'": ["U'", 'D'], // E' = U'+D
+    S: ["F'", 'B'], // S = F'+B
+    "S'": ['F', "B'"], // S' = F+B'
+  };
+
+  const moves = sliceToFaceMap[sliceMove];
+  if (!moves) {
+    throw new Error(`Unknown slice move: ${sliceMove}`);
+  }
+
+  // Convert to logical moves based on provided orientation
+  return [visualMoveToLogical(moves[0], orientation), visualMoveToLogical(moves[1], orientation)];
+}
+
+// Convert double moves to their single logical face move
+function doubleToFaceMove(doubleMove, orientation) {
+  const faceMove = getDoubleFaceMove(doubleMove);
+  return visualMoveToLogical(faceMove, orientation);
+}
+
+// Check if a piece is affected by any type of move
+function isPieceAffectedByMove(pieceType, piecePos, move, storedOrientation) {
+  if (['x', 'y', 'z'].includes(move[0])) {
+    return false;
+  }
+
+  if (['M', 'E', 'S'].includes(move[0])) {
+    const faceMoves = sliceToFaceMoves(move, storedOrientation);
+    return (
+      isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
+      isPieceAffectedBySingleMove(piecePos, faceMoves[1])
+    );
+  }
+
+  if (['r', 'l', 'u', 'd', 'f', 'b'].includes(move[0])) {
+    const faceMove = doubleToFaceMove(move, storedOrientation);
+    return isPieceAffectedBySingleMove(piecePos, faceMove);
+  }
+
+  return isPieceAffectedBySingleMove(piecePos, move);
+}
+
 // Check if a piece is affected by a single move
 function isPieceAffectedBySingleMove(piecePos, move) {
   const face = move[0];
@@ -145,103 +292,8 @@ export class CubeRenderer {
     this.render();
   }
 
-  // Map visual face positions to logical faces based on current rotation
-  getVisualToLogicalMapping(orientation = this.orientation) {
-    const faceNormals = {
-      U: [0, -1, 0], // Up face points down in our coordinate system
-      D: [0, 1, 0], // Down face points up
-      R: [1, 0, 0], // Right face points right
-      L: [-1, 0, 0], // Left face points left
-      F: [0, 0, -1], // Front face points toward viewer
-      B: [0, 0, 1], // Back face points away from viewer
-    };
 
-    const visualDirections = {
-      visualUp: [0, -1, 0], // Visual up is negative Y
-      visualDown: [0, 1, 0], // Visual down is positive Y
-      visualRight: [1, 0, 0], // Visual right is positive X
-      visualLeft: [-1, 0, 0], // Visual left is negative X
-      visualFront: [0, 0, -1], // Visual front is negative Z
-      visualBack: [0, 0, 1], // Visual back is positive Z
-    };
 
-    // For each visual direction, find which logical face is closest to it
-    return Object.fromEntries(
-      Object.entries(visualDirections).map(([visualPos, visualDir]) => {
-        let bestMatch = null;
-        let bestDot = -2; // Start with impossible dot product value
-
-        // Check each logical face
-        Object.entries(faceNormals).forEach(([logicalFace, normal]) => {
-          // Transform the logical face normal by the provided orientation
-          const transformedNormal = vec3_transformQuat(normal, orientation);
-
-          // Calculate dot product to find how aligned they are
-          const dot =
-            transformedNormal[0] * visualDir[0] +
-            transformedNormal[1] * visualDir[1] +
-            transformedNormal[2] * visualDir[2];
-
-          // Keep track of the best match
-          if (dot > bestDot) {
-            bestDot = dot;
-            bestMatch = logicalFace;
-          }
-        });
-
-        return [visualPos, bestMatch];
-      }),
-    );
-  }
-
-  // Convert visual move notation to logical move notation
-  visualMoveToLogical(visualMove, orientation = this.orientation) {
-    const mapping = this.getVisualToLogicalMapping(orientation);
-    const isPrime = visualMove.includes("'");
-    const baseFace = visualMove[0];
-
-    let logicalFace;
-    switch (baseFace) {
-      case 'U':
-        logicalFace = mapping.visualUp;
-        break;
-      case 'D':
-        logicalFace = mapping.visualDown;
-        break;
-      case 'R':
-        logicalFace = mapping.visualRight;
-        break;
-      case 'L':
-        logicalFace = mapping.visualLeft;
-        break;
-      case 'F':
-        logicalFace = mapping.visualFront;
-        break;
-      case 'B':
-        logicalFace = mapping.visualBack;
-        break;
-      default:
-        throw new Error(`not a move: ${baseFace}`);
-    }
-
-    return logicalFace + (isPrime ? "'" : '');
-  }
-
-  // Helper function to get face normal in world space
-  getFaceNormal(logicalFace, orientation = this.orientation) {
-    const faceNormals = {
-      U: [0, -1, 0],
-      D: [0, 1, 0],
-      R: [1, 0, 0],
-      L: [-1, 0, 0],
-      F: [0, 0, -1],
-      B: [0, 0, 1],
-    };
-
-    const normal = faceNormals[logicalFace];
-    const transformedNormal = vec3_transformQuat(normal, orientation);
-    return transformedNormal;
-  }
 
 
 
@@ -340,7 +392,7 @@ export class CubeRenderer {
 
     let processedMove = move;
     if (kind === 'simple') {
-      processedMove = this.visualMoveToLogical(move, orientation);
+      processedMove = visualMoveToLogical(move, orientation);
     }
 
     this.currentAnimation = { move: processedMove, resolve, startTime: Date.now(), kind, reorientationMove, storedOrientation: orientation };
@@ -370,13 +422,13 @@ export class CubeRenderer {
         if (this.currentAnimation.kind === 'slice') {
           // Convert slice moves back to dual face moves for cube state
           const sliceMove = this.currentAnimation.move;
-          const dualFaceMoves = this.sliceToFaceMoves(sliceMove, orientation);
+          const dualFaceMoves = sliceToFaceMoves(sliceMove, orientation);
           this.cube.move(dualFaceMoves[0]);
           this.cube.move(dualFaceMoves[1]);
         } else if (this.currentAnimation.kind === 'double') {
           // Apply the single face move for double moves
           const doubleMove = this.currentAnimation.move;
-          const faceMove = this.doubleToFaceMove(doubleMove, orientation);
+          const faceMove = doubleToFaceMove(doubleMove, orientation);
           this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
           // Apply single face moves (reorientation moves don't change cube state)
@@ -401,36 +453,12 @@ export class CubeRenderer {
     animate();
   }
 
-  sliceToFaceMoves(sliceMove, orientation = this.orientation) {
-    // Convert slice moves to visual dual face moves
-    const sliceToFaceMap = {
-      M: ['R', "L'"], // M = R+L'
-      "M'": ["R'", 'L'], // M' = R'+L
-      E: ['U', "D'"], // E = U+D'
-      "E'": ["U'", 'D'], // E' = U'+D
-      S: ["F'", 'B'], // S = F'+B
-      "S'": ['F', "B'"], // S' = F+B'
-    };
 
-    const moves = sliceToFaceMap[sliceMove];
-    if (!moves) {
-      throw new Error(`Unknown slice move: ${sliceMove}`);
-    }
 
-    // Convert to logical moves based on provided orientation
-    return [this.visualMoveToLogical(moves[0], orientation), this.visualMoveToLogical(moves[1], orientation)];
-  }
-
-  // Convert double moves to their single face move (for animation purposes)
-  doubleToFaceMove(doubleMove, orientation = this.orientation) {
-    const faceMove = getDoubleFaceMove(doubleMove);
-    return this.visualMoveToLogical(faceMove, orientation);
-  }
-
-  setupReorientationAnimation(move, orientation = this.orientation) {
+  setupReorientationAnimation(move, orientation) {
     const isPrime = move.includes("'");
     const baseFace = move[0];
-    const mapping = this.getVisualToLogicalMapping(orientation);
+    const mapping = getVisualToLogicalMapping(orientation);
 
     let axis;
     const direction = isPrime ? 1 : -1;
@@ -442,24 +470,24 @@ export class CubeRenderer {
         const rFace = mapping.visualRight;
         const lFace = mapping.visualLeft;
         // Get the axis by finding the vector between R and L face normals
-        const rNormal = this.getFaceNormal(rFace, orientation);
-        const lNormal = this.getFaceNormal(lFace, orientation);
+        const rNormal = getFaceNormal(rFace, orientation);
+        const lNormal = getFaceNormal(lFace, orientation);
         axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
         break;
       case 'y':
         // Rotate around U-D axis (current visual up to down)
         const uFace = mapping.visualUp;
         const dFace = mapping.visualDown;
-        const uNormal = this.getFaceNormal(uFace, orientation);
-        const dNormal = this.getFaceNormal(dFace, orientation);
+        const uNormal = getFaceNormal(uFace, orientation);
+        const dNormal = getFaceNormal(dFace, orientation);
         axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
         break;
       case 'z':
         // Rotate around F-B axis (current visual front to back)
         const fFace = mapping.visualFront;
         const bFace = mapping.visualBack;
-        const fNormal = this.getFaceNormal(fFace, orientation);
-        const bNormal = this.getFaceNormal(bFace, orientation);
+        const fNormal = getFaceNormal(fFace, orientation);
+        const bNormal = getFaceNormal(bFace, orientation);
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
       default:
@@ -507,9 +535,9 @@ export class CubeRenderer {
   }
 
 
-  getAnimationRotation(move, piecePosition, storedOrientation = this.orientation) {
+  getAnimationRotation(move, piecePosition, storedOrientation) {
     if (['M', "M'", 'E', "E'", 'S', "S'"].includes(move)) {
-      const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
+      const faceMoves = sliceToFaceMoves(move, storedOrientation);
       if (isPieceAffectedBySingleMove(piecePosition, faceMoves[0])) {
         return this.getAnimationRotationForSingleMove(faceMoves[0]);
       } else if (isPieceAffectedBySingleMove(piecePosition, faceMoves[1])) {
@@ -519,7 +547,7 @@ export class CubeRenderer {
     }
 
     if (['r', "r'", 'l', "l'", 'u', "u'", 'd', "d'", 'f', "f'", 'b', "b'"].includes(move)) {
-      const faceMove = this.doubleToFaceMove(move, storedOrientation);
+      const faceMove = doubleToFaceMove(move, storedOrientation);
       if (isPieceAffectedBySingleMove(piecePosition, faceMove)) {
         return this.getAnimationRotationForSingleMove(faceMove);
       }
@@ -550,26 +578,6 @@ export class CubeRenderer {
     return getRotationMatrix(axis, angle);
   }
 
-  isPieceAffectedByMove(pieceType, piecePos, move, storedOrientation = this.orientation) {
-    if (['x', 'y', 'z'].includes(move[0])) {
-      return false;
-    }
-
-    if (['M', 'E', 'S'].includes(move[0])) {
-      const faceMoves = this.sliceToFaceMoves(move, storedOrientation);
-      return (
-        isPieceAffectedBySingleMove(piecePos, faceMoves[0]) ||
-        isPieceAffectedBySingleMove(piecePos, faceMoves[1])
-      );
-    }
-
-    if (['r', 'l', 'u', 'd', 'f', 'b'].includes(move[0])) {
-      const faceMove = this.doubleToFaceMove(move, storedOrientation);
-      return isPieceAffectedBySingleMove(piecePos, faceMove);
-    }
-
-    return isPieceAffectedBySingleMove(piecePos, move);
-  }
 
 
   project3D(x, y, z, applyAnimation, piecePosition) {
@@ -682,7 +690,7 @@ export class CubeRenderer {
       const size = 0.333; // 1/3 of cube edge
       const faceDistance = 1.01; // Slightly outside the cube center
       const shouldAnimate =
-        this.currentAnimation && this.isPieceAffectedByMove('center', center.pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+        this.currentAnimation && isPieceAffectedByMove('center', center.pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
       const corners = [
         this.project3D(
@@ -752,7 +760,7 @@ export class CubeRenderer {
         const size = 0.333; // 1/3 of cube edge
         const faceDistance = 1.01; // Slightly outside the cube center
         const shouldAnimate =
-          this.currentAnimation && this.isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+          this.currentAnimation && isPieceAffectedByMove('edge', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -845,7 +853,7 @@ export class CubeRenderer {
         const size = 0.333;
         const faceDistance = 1.01;
         const shouldAnimate =
-          this.currentAnimation && this.isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
+          this.currentAnimation && isPieceAffectedByMove('corner', pos, this.currentAnimation.move, this.currentAnimation.storedOrientation);
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
