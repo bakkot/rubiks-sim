@@ -376,7 +376,7 @@ export class CubeRenderer {
         } else if (this.currentAnimation.kind === 'double') {
           // Apply the single face move for double moves
           const doubleMove = this.currentAnimation.move;
-          const faceMove = this.doubleToFaceMove(doubleMove);
+          const faceMove = this.doubleToFaceMove(doubleMove, orientation);
           this.cube.move(faceMove);
         } else if (this.currentAnimation.kind === 'simple') {
           // Apply single face moves (reorientation moves don't change cube state)
