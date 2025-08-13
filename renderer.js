@@ -352,32 +352,6 @@ function visualMoveToLogicalGeneral(visualMove, orientation) {
   throw new Error(`Unknown move kind: ${kind}`);
 }
 
-function isPieceAffectedByMove(piecePos, move, orientation) {
-  const kind = getMoveKind(move);
-
-  switch (kind) {
-    case 'simple': {
-      const logicalMove = visualMoveToLogical(move, orientation);
-      return isPieceAffectedByFaceTurn(piecePos, logicalMove);
-    }
-    case 'reorientation': {
-      return false
-    }
-    case 'slice': {
-      const logicalMoves = sliceToFaceMoves(move).map(m => visualMoveToLogical(m, orientation));
-      return isPieceAffectedByFaceTurn(piecePos, logicalMoves[0]) || isPieceAffectedByFaceTurn(piecePos, logicalMoves[1]);
-    }
-    case 'double': {
-      const faceMove = doubleToFaceMove(move);
-      const logicalMove = visualMoveToLogical(faceMove, orientation);
-      return isPieceAffectedByFaceTurn(piecePos, logicalMove);
-    }
-    default: {
-      throw new Error(`Unknown move kind: ${kind}`);
-    }
-  }
-}
-
 function isPieceAffectedByFaceTurn(piecePos, move) {
   const face = move[0];
 
