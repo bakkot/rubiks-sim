@@ -213,6 +213,59 @@ function visualMoveToLogical(visualMove, orientation) {
   return logicalFace + (isPrime ? "'" : '');
 }
 
+function visualReorientationToLogical(visualReorientationMove, orientation) {
+  const mapping = getVisualToLogicalMapping(orientation);
+  const isPrime = visualReorientationMove.includes("'");
+  const baseFace = visualReorientationMove[0];
+
+  let logicalMove;
+  switch (baseFace) {
+    case 'x':
+      // x rotates around R-L axis
+      const right = mapping.visualRight;
+      if (right === 'R') logicalMove = 'x';
+      else if (right === 'L') logicalMove = "x'";
+      else if (right === 'U') logicalMove = 'y';
+      else if (right === 'D') logicalMove = "y'";
+      else if (right === 'F') logicalMove = 'z';
+      else if (right === 'B') logicalMove = "z'";
+      break;
+    case 'y':
+      // y rotates around U-D axis
+      const up = mapping.visualUp;
+      if (up === 'U') logicalMove = 'y';
+      else if (up === 'D') logicalMove = "y'";
+      else if (up === 'R') logicalMove = 'x';
+      else if (up === 'L') logicalMove = "x'";
+      else if (up === 'F') logicalMove = 'z';
+      else if (up === 'B') logicalMove = "z'";
+      break;
+    case 'z':
+      // z rotates around F-B axis
+      const front = mapping.visualFront;
+      if (front === 'F') logicalMove = 'z';
+      else if (front === 'B') logicalMove = "z'";
+      else if (front === 'R') logicalMove = 'x';
+      else if (front === 'L') logicalMove = "x'";
+      else if (front === 'U') logicalMove = 'y';
+      else if (front === 'D') logicalMove = "y'";
+      break;
+    default:
+      throw new Error(`not a reorientation move: ${baseFace}`);
+  }
+
+  // Apply prime if the visual move was prime
+  if (isPrime) {
+    if (logicalMove.includes("'")) {
+      logicalMove = logicalMove[0]; // Remove prime
+    } else {
+      logicalMove += "'"; // Add prime
+    }
+  }
+
+  return logicalMove;
+}
+
 function isPieceAffectedByMove(piecePos, move, orientation) {
   const kind = getMoveKind(move);
 
@@ -369,7 +422,8 @@ export class CubeRenderer {
 
     let reorientationData = null;
     if (includesReorientation(kind)) {
-      reorientationData = this.setupReorientationAnimation(reorientationMove, orientation);
+      const logicalReorientationMove = visualReorientationToLogical(reorientationMove, orientation);
+      reorientationData = this.setupReorientationAnimation(logicalReorientationMove);
     }
 
     const animate = () => {
@@ -422,39 +476,31 @@ export class CubeRenderer {
     animate();
   }
 
-  setupReorientationAnimation(move, orientation) {
-    const isPrime = move.includes("'");
-    const baseFace = move[0];
-    const mapping = getVisualToLogicalMapping(orientation);
+  setupReorientationAnimation(logicalMove) {
+    const isPrime = logicalMove.includes("'");
+    const baseFace = logicalMove[0];
 
     let axis;
     const direction = isPrime ? 1 : -1;
 
-    // Determine the rotation axis based on provided orientation
+    // Determine the rotation axis based on logical faces
     switch (baseFace) {
       case 'x':
-        // Rotate around R-L axis (current visual right to left)
-        const rFace = mapping.visualRight;
-        const lFace = mapping.visualLeft;
-        // Get the axis by finding the vector between R and L face normals
-        const rNormal = getFaceNormal(rFace, this.orientation);
-        const lNormal = getFaceNormal(lFace, this.orientation);
+        // Rotate around logical R-L axis
+        const rNormal = getFaceNormal('R', this.orientation);
+        const lNormal = getFaceNormal('L', this.orientation);
         axis = [rNormal[0] - lNormal[0], rNormal[1] - lNormal[1], rNormal[2] - lNormal[2]];
         break;
       case 'y':
-        // Rotate around U-D axis (current visual up to down)
-        const uFace = mapping.visualUp;
-        const dFace = mapping.visualDown;
-        const uNormal = getFaceNormal(uFace, this.orientation);
-        const dNormal = getFaceNormal(dFace, this.orientation);
+        // Rotate around logical U-D axis
+        const uNormal = getFaceNormal('U', this.orientation);
+        const dNormal = getFaceNormal('D', this.orientation);
         axis = [uNormal[0] - dNormal[0], uNormal[1] - dNormal[1], uNormal[2] - dNormal[2]];
         break;
       case 'z':
-        // Rotate around F-B axis (current visual front to back)
-        const fFace = mapping.visualFront;
-        const bFace = mapping.visualBack;
-        const fNormal = getFaceNormal(fFace, this.orientation);
-        const bNormal = getFaceNormal(bFace, this.orientation);
+        // Rotate around logical F-B axis
+        const fNormal = getFaceNormal('F', this.orientation);
+        const bNormal = getFaceNormal('B', this.orientation);
         axis = [fNormal[0] - bNormal[0], fNormal[1] - bNormal[1], fNormal[2] - bNormal[2]];
         break;
       default:
