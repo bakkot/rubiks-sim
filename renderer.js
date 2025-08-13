@@ -650,7 +650,7 @@ export class CubeRenderer {
       };
 
       const size = 0.333; // 1/3 of cube edge
-      const faceDistance = 1.01; // Slightly outside the cube center
+      const faceDistance = 1;
 
       const corners = [
         this.project3D(
@@ -714,7 +714,7 @@ export class CubeRenderer {
 
         let stickerCorners;
         const size = 0.333; // 1/3 of cube edge
-        const faceDistance = 1.01; // Slightly outside the cube center
+        const faceDistance = 1; // Slightly outside the cube center
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
@@ -805,7 +805,7 @@ export class CubeRenderer {
 
         let stickerCorners;
         const size = 0.333;
-        const faceDistance = 1.01;
+        const faceDistance = 1;
 
         if (face === 'U' || face === 'D') {
           const y = (face === 'U' ? -1 : 1) * faceDistance;
