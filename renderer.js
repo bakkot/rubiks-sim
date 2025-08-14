@@ -400,7 +400,15 @@ export class CubeRenderer {
       this.currentAnimation.animationProgress = Math.min(elapsed / this.animationDuration, 1);
 
       if (includesReorientation(kind)) {
-        this.updateReorientationAnimation(reorientationData, this.currentAnimation.animationProgress);
+        const { axis, totalRotation, startOrientation } = reorientationData;
+
+        const currentAngle = totalRotation * this.currentAnimation.animationProgress;
+
+        // Create rotation quaternion for current progress
+        const rotationQuat = quat_fromAxisAngle(axis, currentAngle);
+
+        // Apply rotation to starting orientation
+        this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
       }
 
       this.render();
@@ -425,13 +433,15 @@ export class CubeRenderer {
           const rotationQuat = quat_fromAxisAngle(reorientationData.axis, reorientationData.totalRotation);
 
           // Update all remaining queue entries
+          // Strictly speaking we should only do this for things which were added before this move had progressed enough to change the orientation
+          // Figuring that out is complicated and I don't want to bother
           this.animationQueue.forEach(queueEntry => {
             queueEntry.orientation = quat_normalize(quat_multiply(rotationQuat, queueEntry.orientation));
           });
         }
 
         // Note: Reorientation moves don't change cube state, only visual orientation
-        // Final orientation is already set by updateReorientationAnimation
+        // Final orientation is already set above
         resolve();
         this.currentAnimation = null;
         this.render();
@@ -484,18 +494,6 @@ export class CubeRenderer {
       totalRotation: (direction * Math.PI) / 2, // 90 degrees
       startOrientation: [...this.orientation],
     };
-  }
-
-  updateReorientationAnimation(reorientationData, animationProgress) {
-    const { axis, totalRotation, startOrientation } = reorientationData;
-
-    const currentAngle = totalRotation * animationProgress;
-
-    // Create rotation quaternion for current progress
-    const rotationQuat = quat_fromAxisAngle(axis, currentAngle);
-
-    // Apply rotation to starting orientation
-    this.orientation = quat_normalize(quat_multiply(rotationQuat, startOrientation));
   }
 
   getFaceTurnAnimationRotation(logicalMove, piecePosition, orientation) {
